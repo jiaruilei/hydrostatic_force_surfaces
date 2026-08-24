@@ -205,7 +205,10 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
 
 .coach-card { padding:20px; border-top:1px solid var(--line); background:linear-gradient(135deg,#f8fbff,#eef5ff); }
 .coach-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.coach-title { display:flex; align-items:center; gap:10px; }
 .coach-header h2 { margin:0; color:#172b4d; font-size:19px; }
+.coach-icon { display:grid; width:36px; height:36px; flex:0 0 36px; place-items:center; border-radius:12px; color:#fff; background:linear-gradient(135deg,#2563eb,#7c3aed); box-shadow:0 8px 18px rgba(37,99,235,.2); }
+.coach-icon svg { width:22px; height:22px; }
 .coach-status { display:inline-flex; align-items:center; gap:6px; color:#5d6b7d; font-size:11px; }
 .coach-status::before { width:8px; height:8px; border-radius:50%; background:#10b981; content:""; }
 .coach-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(260px,.6fr); gap:12px; }
