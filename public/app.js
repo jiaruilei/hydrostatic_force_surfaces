@@ -36,7 +36,6 @@ const elements = {
   forceCanvas: $("forceCanvas"),
   methodTitle: $("methodTitle"),
   methodSteps: $("methodSteps"),
-  insightText: $("insightText"),
   explorePanel: $("explorePanel"),
   resultTitle: $("resultTitle"),
   equationGrid: $("equationGrid"),
@@ -165,7 +164,27 @@ function equationCard(label, equation) {
   return `<div class="equation-card"><span>${label}</span><p>${equation}</p></div>`;
 }
 
+async function typesetMath(targets) {
+  try {
+    await (window.mathJaxReady || Promise.resolve());
+    if (window.MathJax?.typesetPromise) await window.MathJax.typesetPromise(targets);
+  } catch (error) {
+    console.warn("Math typesetting skipped:", error);
+  }
+}
+
+let uiTypesetTimer;
+function scheduleUiTypeset() {
+  window.clearTimeout(uiTypesetTimer);
+  uiTypesetTimer = window.setTimeout(() => {
+    typesetMath([elements.methodSteps, elements.equationGrid]);
+  }, 60);
+}
+
 function renderLesson(result) {
+  if (window.MathJax?.typesetClear) {
+    window.MathJax.typesetClear([elements.methodSteps, elements.equationGrid]);
+  }
   if (state.surface === "plane") {
     elements.lessonKicker.textContent = "Plane surface";
     elements.lessonTitle.textContent = "Follow the pressure to its single resultant";
@@ -173,16 +192,15 @@ function renderLesson(result) {
     elements.canvasTitle.textContent = "Inclined rectangular plate";
     elements.methodTitle.textContent = "Plane-surface workflow";
     elements.methodSteps.innerHTML = [
-      methodStep(1, "Locate the centroid", "Use vertical depth, even when the plate is inclined.", "ȳ = yₜ + ½L sin θ"),
-      methodStep(2, "Integrate the pressure", "Average pressure at the centroid times the plate area gives the resultant.", "Fᵣ = ρg ȳ A"),
-      methodStep(3, "Place the resultant", "The pressure gradient moves the line of action below the centroid.", "yCP = ȳ + Iᴳ sin²θ/(ȳA)"),
+      methodStep(1, "Locate the centroid", "Use vertical depth, even when the plate is inclined.", "\\(\\bar y = y_t + \\frac{L}{2}\\sin\\theta\\)"),
+      methodStep(2, "Integrate the pressure", "Average pressure at the centroid times the plate area gives the resultant.", "\\(F_R = \\rho g\\bar y A\\)"),
+      methodStep(3, "Place the resultant", "The pressure gradient moves the line of action below the centroid.", "\\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\)"),
     ].join("");
-    elements.insightText.textContent = `The centre of pressure is ${fmt(result.centerPressureDepth - result.centroidDepth, 3)} m below the centroid for this geometry.`;
     elements.resultTitle.textContent = "From centroid depth to centre of pressure";
     elements.equationGrid.innerHTML = [
-      equationCard("1 · Geometry", `A = ${fmt(result.width)} × ${fmt(result.length)} = <strong>${fmt(result.area)} m²</strong><br>ȳ = ${fmt(result.topDepth)} + ½(${fmt(result.length)})sin(${fmt(result.angle, 0)}°) = <strong>${fmt(result.centroidDepth)} m</strong>`),
-      equationCard("2 · Resultant", `Fᵣ = (${fmt(result.density, 0)})(9.81)(${fmt(result.centroidDepth)})(${fmt(result.area)})<br>= <strong>${fmt(result.forceKN)} kN</strong>`),
-      equationCard("3 · Line of action", `Iᴳ = bL³/12 = ${fmt(result.centroidalInertia, 3)} m⁴<br>yCP = <strong>${fmt(result.centerPressureDepth)} m</strong>`),
+      equationCard("1 · Geometry", `\\(A = ${fmt(result.width)}\\times${fmt(result.length)} = \\mathbf{${fmt(result.area)}\\;\\mathrm{m^2}}\\)<br>\\(\\bar y = ${fmt(result.topDepth)} + \\frac{${fmt(result.length)}}{2}\\sin ${fmt(result.angle, 0)}^\\circ = \\mathbf{${fmt(result.centroidDepth)}\\;\\mathrm{m}}\\)`),
+      equationCard("2 · Resultant", `\\(F_R = (${fmt(result.density, 0)})(9.81)(${fmt(result.centroidDepth)})(${fmt(result.area)})\\)<br>\\(F_R = \\mathbf{${fmt(result.forceKN)}\\;\\mathrm{kN}}\\)`),
+      equationCard("3 · Line of action", `\\(I_G = \\frac{bL^3}{12} = ${fmt(result.centroidalInertia, 3)}\\;\\mathrm{m^4}\\)<br>\\(y_{CP} = \\mathbf{${fmt(result.centerPressureDepth)}\\;\\mathrm{m}}\\)`),
     ].join("");
     elements.challengeTitle.textContent = "Predict the plane-surface resultant";
     elements.challengePrompt.textContent = "Calculate the resultant hydrostatic force normal to the plate. A result within 2% counts as correct.";
@@ -196,16 +214,15 @@ function renderLesson(result) {
   elements.canvasTitle.textContent = "Quarter-circle curved gate";
   elements.methodTitle.textContent = "Curved-surface workflow";
   elements.methodSteps.innerHTML = [
-    methodStep(1, "Project vertically", "The horizontal component equals the force on the vertical projection.", "Fᴴ = ρg ȳ Aᵥ"),
-    methodStep(2, "Weigh imaginary fluid", "The vertical component is the weight of fluid above the curve.", "Fⱽ = ρg V"),
-    methodStep(3, "Combine components", "The resultant passes through the intersection of the component lines of action.", "Fᵣ = √(Fᴴ² + Fⱽ²)"),
+    methodStep(1, "Project vertically", "The horizontal component equals the force on the vertical projection.", "\\(F_H = \\rho g\\bar y A_v\\)"),
+    methodStep(2, "Weigh imaginary fluid", "The vertical component is the weight of fluid above the curve.", "\\(F_V = \\rho gV\\)"),
+    methodStep(3, "Combine components", "The resultant passes through the intersection of the component lines of action.", "\\(F_R = \\sqrt{F_H^2 + F_V^2}\\)"),
   ].join("");
-  elements.insightText.textContent = `The selected side makes Fᴴ act ${result.horizontalDirection} and Fⱽ act ${result.verticalDirection}. Every curved plate has two sides.`;
   elements.resultTitle.textContent = "Projection, imaginary volume, and resultant";
   elements.equationGrid.innerHTML = [
-    equationCard("1 · Horizontal", `Aᵥ = bR = ${fmt(result.projectedArea)} m²<br>Fᴴ = ρg ȳ Aᵥ = <strong>${fmt(result.horizontalKN)} kN</strong>`),
-    equationCard("2 · Vertical", `V = bdR + ¼πbR² = ${fmt(result.imaginaryVolume)} m³<br>Fⱽ = ρgV = <strong>${fmt(result.verticalKN)} kN</strong>`),
-    equationCard("3 · Resultant", `Fᵣ = √(${fmt(result.horizontalKN)}² + ${fmt(result.verticalKN)}²)<br>= <strong>${fmt(result.resultantKN)} kN at ${fmt(result.resultantAngle, 1)}°</strong>`),
+    equationCard("1 · Horizontal", `\\(A_v = bR = ${fmt(result.projectedArea)}\\;\\mathrm{m^2}\\)<br>\\(F_H = \\rho g\\bar y A_v = \\mathbf{${fmt(result.horizontalKN)}\\;\\mathrm{kN}}\\)`),
+    equationCard("2 · Vertical", `\\(V = bdR + \\frac{1}{4}\\pi bR^2 = ${fmt(result.imaginaryVolume)}\\;\\mathrm{m^3}\\)<br>\\(F_V = \\rho gV = \\mathbf{${fmt(result.verticalKN)}\\;\\mathrm{kN}}\\)`),
+    equationCard("3 · Resultant", `\\(F_R = \\sqrt{${fmt(result.horizontalKN)}^2 + ${fmt(result.verticalKN)}^2}\\)<br>\\(F_R = \\mathbf{${fmt(result.resultantKN)}\\;\\mathrm{kN}},\\quad \\theta_R = ${fmt(result.resultantAngle, 1)}^\\circ\\)`),
   ].join("");
   elements.challengeTitle.textContent = "Predict the curved-surface resultant";
   elements.challengePrompt.textContent = "Combine the displayed horizontal and vertical components. A result within 2% counts as correct.";
@@ -501,6 +518,7 @@ function render() {
   renderLesson(result);
   renderChips();
   draw();
+  scheduleUiTypeset();
 }
 
 function selectSurface(surface) {
@@ -571,11 +589,12 @@ function showHint() {
   state.hintsUsed += 1;
   const result = currentResult();
   if (state.surface === "plane") {
-    elements.challengeFeedback.textContent = `Use A = ${fmt(result.area)} m² and ȳ = ${fmt(result.centroidDepth)} m in Fᵣ = ρg ȳA. Divide newtons by 1000.`;
+    elements.challengeFeedback.textContent = `Use \\(A = ${fmt(result.area)}\\;\\mathrm{m^2}\\) and \\(\\bar y = ${fmt(result.centroidDepth)}\\;\\mathrm{m}\\) in \\(F_R = \\rho g\\bar y A\\). Divide newtons by 1000.`;
   } else {
-    elements.challengeFeedback.textContent = `Combine ${fmt(result.horizontalKN)} kN horizontally and ${fmt(result.verticalKN)} kN vertically with the Pythagorean theorem.`;
+    elements.challengeFeedback.textContent = `Combine \\(F_H = ${fmt(result.horizontalKN)}\\;\\mathrm{kN}\\) and \\(F_V = ${fmt(result.verticalKN)}\\;\\mathrm{kN}\\) using \\(F_R = \\sqrt{F_H^2 + F_V^2}\\).`;
   }
   elements.challengeFeedback.className = "challenge-feedback warn";
+  typesetMath([elements.challengeFeedback]);
 }
 
 function revealAnswer() {
@@ -592,6 +611,7 @@ function addCoachMessage(role, text, extraClass = "") {
   message.textContent = text;
   elements.coachLog.append(message);
   elements.coachLog.scrollTop = elements.coachLog.scrollHeight;
+  typesetMath([message]);
   return message;
 }
 
@@ -623,6 +643,7 @@ async function askCoach(question) {
     if (!response.ok) throw new Error(payload.error || "Coach request failed.");
     pending.textContent = payload.reply;
     pending.classList.remove("pending");
+    typesetMath([pending]);
     state.history.push(
       { role: "user", content: cleanQuestion },
       { role: "assistant", content: payload.reply },
