@@ -76,36 +76,36 @@ function ruleBasedReply(question, context) {
 
   if (context.surface === "plane") {
     if (q.includes("center") || q.includes("cp") || q.includes("pressure")) {
-      return `Pressure increases linearly with vertical depth, so the center of pressure lies below the centroid. Here, y-bar is ${readable(r.centroidDepth)} m and y-CP is ${readable(r.centerPressureDepth)} m. Use y-CP = y-bar + I-G sin²(theta)/(y-bar A).`;
+      return `Pressure increases linearly with vertical depth, so the center of pressure lies below the centroid. Here, \\(\\bar y = ${readable(r.centroidDepth)}\\;\\mathrm{m}\\) and \\(y_{CP} = ${readable(r.centerPressureDepth)}\\;\\mathrm{m}\\). Use \\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\).`;
     }
     if (q.includes("angle") || q.includes("incline")) {
-      return "The angle changes vertical depth through L sin(theta). Area stays bL, but both the centroid depth and the center-of-pressure correction depend on the inclination.";
+      return "The angle changes vertical depth through \\(L\\sin\\theta\\). The area remains \\(A=bL\\), but both the centroid depth and the center-of-pressure correction depend on the inclination.";
     }
     if (q.includes("hint") || q.includes("start")) {
-      return "First find the centroid's vertical depth: y-bar = y-top + (L/2)sin(theta). Then use F-R = rho g y-bar A. Find the center of pressure only after the force magnitude.";
+      return "First find the centroid's vertical depth: \\(\\bar y = y_t + \\frac{L}{2}\\sin\\theta\\). Then use \\(F_R = \\rho g\\bar y A\\). Find the center of pressure only after the force magnitude.";
     }
     if (context.mode === "challenge" && !context.answerRevealed) {
       return "Build the answer from centroid depth and area. I will keep the final force hidden while the challenge is active.";
     }
-    return `For this plate, A = ${readable(r.area)} m² and y-bar = ${readable(r.centroidDepth)} m, giving F-R = ${readable(r.forceKN)} kN. Its line of action is at ${readable(r.centerPressureDepth)} m below the free surface.`;
+    return `For this plate, \\(A = ${readable(r.area)}\\;\\mathrm{m^2}\\) and \\(\\bar y = ${readable(r.centroidDepth)}\\;\\mathrm{m}\\), giving \\(F_R = ${readable(r.forceKN)}\\;\\mathrm{kN}\\). Its line of action is at \\(y_{CP} = ${readable(r.centerPressureDepth)}\\;\\mathrm{m}\\) below the free surface.`;
   }
 
   if (q.includes("horizontal") || q.includes("projection")) {
-    return `Treat the vertical projection as a plane surface. Its area is ${readable(r.projectedArea)} m² and centroid depth is ${readable(r.projectedCentroidDepth)} m, so F-H = rho g y-bar A = ${readable(r.horizontalKN)} kN.`;
+    return `Treat the vertical projection as a plane surface. Its area is \\(A_v = ${readable(r.projectedArea)}\\;\\mathrm{m^2}\\) and its centroid depth is \\(\\bar y = ${readable(r.projectedCentroidDepth)}\\;\\mathrm{m}\\), so \\(F_H = \\rho g\\bar y A_v = ${readable(r.horizontalKN)}\\;\\mathrm{kN}\\).`;
   }
   if (q.includes("vertical") || q.includes("weight") || q.includes("imaginary")) {
-    return `The vertical component equals the weight of the imaginary fluid above the curve. The volume is ${readable(r.imaginaryVolume)} m³, so F-V = rho g V = ${readable(r.verticalKN)} kN, acting ${r.verticalDirection}.`;
+    return `The vertical component equals the weight of the imaginary fluid above the curve. The volume is \\(V = ${readable(r.imaginaryVolume)}\\;\\mathrm{m^3}\\), so \\(F_V = \\rho gV = ${readable(r.verticalKN)}\\;\\mathrm{kN}\\), acting ${r.verticalDirection}.`;
   }
   if (q.includes("side") || q.includes("direction")) {
     return `Every curved plate has two sides. The selected ${r.side} loading makes the horizontal component act ${r.horizontalDirection} and the vertical component act ${r.verticalDirection}; the magnitudes come from the same projection and imaginary-volume steps.`;
   }
   if (q.includes("hint") || q.includes("start")) {
-    return "Split the curved-surface force into components: horizontal force on the vertical projection, then vertical weight of the imaginary fluid. Combine them with the Pythagorean theorem.";
+    return "Split the curved-surface force into components: horizontal force on the vertical projection, then vertical weight of the imaginary fluid. Combine them using \\(F_R = \\sqrt{F_H^2 + F_V^2}\\).";
   }
   if (context.mode === "challenge" && !context.answerRevealed) {
     return "Find F-H and F-V separately, then combine them. I will keep the final resultant hidden while the challenge is active.";
   }
-  return `The components are F-H = ${readable(r.horizontalKN)} kN and F-V = ${readable(r.verticalKN)} kN. The resultant is ${readable(r.resultantKN)} kN at ${readable(r.resultantAngle, 1)}° to the horizontal.`;
+  return `The components are \\(F_H = ${readable(r.horizontalKN)}\\;\\mathrm{kN}\\) and \\(F_V = ${readable(r.verticalKN)}\\;\\mathrm{kN}\\). The resultant is \\(F_R = ${readable(r.resultantKN)}\\;\\mathrm{kN}\\) at \\(${readable(r.resultantAngle, 1)}^\\circ\\) to the horizontal.`;
 }
 
 function coachInstructions() {
@@ -116,7 +116,9 @@ function coachInstructions() {
     "For curved surfaces, teach F_H as the force on the vertical projection and F_V as the weight of the imaginary fluid above the curve.",
     "Use the server-verified live state. Do not invent geometry or measurements.",
     "In Challenge mode, if the answer is not revealed, scaffold without stating the final resultant force.",
-    "Keep replies classroom-friendly, accurate, and under 140 words. Use plain-text math notation rather than markdown tables.",
+    "Format every mathematical expression as TeX using \\( ... \\) for inline math or \\[ ... \\] for display math; do not use dollar-sign delimiters.",
+    "Use TeX commands such as \\rho, \\bar y, subscripts, fractions, and \\mathrm{} for units. Keep ordinary prose outside math delimiters.",
+    "Keep replies classroom-friendly, accurate, and under 140 words. Avoid markdown tables and unnecessary blank lines between equations.",
   ].join("\n");
 }
 
