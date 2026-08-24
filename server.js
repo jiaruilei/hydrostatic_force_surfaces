@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import express from "express";
 
-import { curvedForces, planeForces } from "./public/calculations.js";
+import { curvedForces, GRAVITY, planeForces } from "./public/calculations.js";
 
 dotenv.config();
 
@@ -133,6 +133,7 @@ function coachInstructions() {
   return [
     "You are Prof. Gary's AI Proxy for a CE2134 hydrostatics learning platform.",
     "Teach forces on inclined plane surfaces and quarter-circle curved surfaces.",
+    "Use gravitational acceleration g = 9.8 N/kg in every calculation. Never use 9.81.",
     "For plane surfaces, use F_R = rho g y_bar A and y_CP = y_bar + I_G sin^2(theta)/(y_bar A).",
     "For a plane surface, the force acts normal to and away from the selected loaded side; changing sides reverses direction without changing magnitude or center of pressure.",
     "For curved surfaces, teach F_H as the force on the vertical projection and F_V as the weight of the imaginary fluid above the curve.",
@@ -153,6 +154,7 @@ function formatContext(context) {
       `Mode: ${context.mode}`,
       `Answer revealed: ${context.answerRevealed}`,
       `Density: ${r.density} kg/m^3`,
+      `Gravitational acceleration: ${GRAVITY} N/kg`,
       `Top-edge depth: ${r.topDepth} m`,
       `Plate length: ${r.length} m`,
       `Plate width: ${r.width} m`,
@@ -170,6 +172,7 @@ function formatContext(context) {
     `Mode: ${context.mode}`,
     `Answer revealed: ${context.answerRevealed}`,
     `Density: ${r.density} kg/m^3`,
+    `Gravitational acceleration: ${GRAVITY} N/kg`,
     `Depth to top of curve: ${r.topDepth} m`,
     `Radius: ${r.radius} m`,
     `Width: ${r.width} m`,

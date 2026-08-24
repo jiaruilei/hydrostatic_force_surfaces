@@ -1,4 +1,4 @@
-export const GRAVITY = 9.81;
+export const GRAVITY = 9.8;
 
 function finite(value, fallback) {
   const number = Number(value);

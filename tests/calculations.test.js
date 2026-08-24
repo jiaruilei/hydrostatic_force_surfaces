@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { curvedForces, planeForces } from "../public/calculations.js";
+import { curvedForces, GRAVITY, planeForces } from "../public/calculations.js";
 
 function close(actual, expected, tolerance = 1e-6) {
   assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} != ${expected}`);
 }
+
+test("uses the course gravitational acceleration", () => {
+  assert.equal(GRAVITY, 9.8);
+});
 
 test("plane-surface lecture example", () => {
   const result = planeForces({
@@ -17,7 +21,7 @@ test("plane-surface lecture example", () => {
   });
 
   close(result.centroidDepth, 4);
-  close(result.forceKN, 156.96);
+  close(result.forceKN, 156.8);
   close(result.centerPressureDepth, 4.083333333333333);
   close(result.centroidToPressure, 0.08333333333333326);
 });
@@ -30,13 +34,15 @@ test("quarter-circle curved-surface lecture example", () => {
     width: 1,
   });
 
-  close(result.horizontalKN, 98.1);
+  const verticalKN = GRAVITY * (8 + Math.PI);
+
+  close(result.horizontalKN, 98);
   close(result.horizontalCenterDepth, 5.066666666666666);
-  close(result.verticalKN, 109.29902393171587);
+  close(result.verticalKN, verticalKN);
   close(result.verticalCenterX, 0.9573735998353784);
   close(result.verticalCenterDepth, 2.8032830002057767);
   close(result.verticalLineX, 0.9573735998353784);
-  close(result.resultantKN, Math.hypot(98.1, 109.29902393171587));
+  close(result.resultantKN, Math.hypot(98, verticalKN));
 });
 
 test("force magnitude scales linearly with density and width", () => {

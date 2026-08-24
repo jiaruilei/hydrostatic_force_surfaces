@@ -1,4 +1,4 @@
-import { curvedForces, planeForces } from "./calculations.js";
+import { curvedForces, GRAVITY, planeForces } from "./calculations.js";
 import {
   SKILL_LABELS,
   averageMastery,
@@ -260,7 +260,7 @@ function renderLesson(result) {
     elements.resultTitle.textContent = "From centroid depth to centre of pressure";
     elements.equationGrid.innerHTML = [
       equationCard("1 · Geometry", `\\(A = ${fmt(result.width)}\\times${fmt(result.length)} = \\mathbf{${fmt(result.area)}\\;\\mathrm{m^2}}\\)<br>\\(\\bar y = ${fmt(result.topDepth)} + \\frac{${fmt(result.length)}}{2}\\sin ${fmt(result.angle, 0)}^\\circ = \\mathbf{${fmt(result.centroidDepth)}\\;\\mathrm{m}}\\)`),
-      equationCard("2 · Resultant", `\\(F_R = (${fmt(result.density, 0)})(9.81)(${fmt(result.centroidDepth)})(${fmt(result.area)})\\)<br>\\(F_R = \\mathbf{${fmt(result.forceKN)}\\;\\mathrm{kN}}\\)`),
+      equationCard("2 · Resultant", `\\(F_R = (${fmt(result.density, 0)})(${fmt(GRAVITY, 1)})(${fmt(result.centroidDepth)})(${fmt(result.area)})\\)<br>\\(F_R = \\mathbf{${fmt(result.forceKN)}\\;\\mathrm{kN}}\\)`),
       equationCard("3 · Line of action", `\\(I_G = \\frac{bL^3}{12} = ${fmt(result.centroidalInertia, 3)}\\;\\mathrm{m^4}\\)<br>\\(y_{CP} = \\mathbf{${fmt(result.centerPressureDepth)}\\;\\mathrm{m}}\\)`),
     ].join("");
     elements.challengeTitle.textContent = "Predict the force and centre of pressure";
