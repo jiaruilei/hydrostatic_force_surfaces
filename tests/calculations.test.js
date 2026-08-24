@@ -33,6 +33,8 @@ test("quarter-circle curved-surface lecture example", () => {
   close(result.horizontalKN, 98.1);
   close(result.horizontalCenterDepth, 5.066666666666666);
   close(result.verticalKN, 109.29902393171587);
+  close(result.verticalCenterX, 0.9573735998353784);
+  close(result.verticalCenterDepth, 2.8032830002057767);
   close(result.verticalLineX, 0.9573735998353784);
   close(result.resultantKN, Math.hypot(98.1, 109.29902393171587));
 });
