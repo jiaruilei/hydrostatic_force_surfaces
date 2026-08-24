@@ -133,6 +133,7 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
 .lesson-intro h2 { margin:0; color:#172b4d; font-size:clamp(19px,2vw,25px); }
 .lesson-intro > p { max-width:540px; margin:0; color:var(--muted); font-size:13px; line-height:1.55; }
 .reading-bar { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+.reading-bar.five-readings { grid-template-columns:repeat(5,minmax(0,1fr)); }
 .reading { padding:11px 13px; border:1px solid var(--line); border-radius:11px; background:#fff; }
 .reading span { display:block; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
 .reading strong { display:block; margin-top:3px; color:#172b4d; font-size:18px; font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -221,6 +222,7 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
   .controls { border-right:0; border-bottom:1px solid var(--line); }
   .lesson-intro > p { max-width:none; }
   .reading-bar { grid-template-columns:1fr 1fr; }
+  .reading-bar.five-readings { grid-template-columns:1fr 1fr; }
   .equation-grid,.method-steps { grid-template-columns:1fr; }
   .coach-layout { grid-template-columns:1fr; }
   .challenge-form { grid-template-columns:1fr 1fr; }
