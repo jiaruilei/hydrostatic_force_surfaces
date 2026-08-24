@@ -42,7 +42,13 @@ const elements = {
   challengePanel: $("challengePanel"),
   challengeTitle: $("challengeTitle"),
   challengePrompt: $("challengePrompt"),
+  challengeInputs: $("challengeInputs"),
+  forcePredictionLabel: $("forcePredictionLabel"),
+  cpPredictionLabel: $("cpPredictionLabel"),
   prediction: $("prediction"),
+  cpPrediction: $("cpPrediction"),
+  verticalCpGroup: $("verticalCpGroup"),
+  verticalCpPrediction: $("verticalCpPrediction"),
   checkPrediction: $("checkPrediction"),
   hintButton: $("hintButton"),
   revealButton: $("revealButton"),
@@ -115,6 +121,8 @@ function resetChallenge() {
   state.attempts = 0;
   state.hintsUsed = 0;
   elements.prediction.value = "";
+  elements.cpPrediction.value = "";
+  elements.verticalCpPrediction.value = "";
   elements.challengeFeedback.textContent = "Work through the lecture method before checking.";
   elements.challengeFeedback.className = "challenge-feedback";
 }
@@ -204,8 +212,12 @@ function renderLesson(result) {
       equationCard("2 · Resultant", `\\(F_R = (${fmt(result.density, 0)})(9.81)(${fmt(result.centroidDepth)})(${fmt(result.area)})\\)<br>\\(F_R = \\mathbf{${fmt(result.forceKN)}\\;\\mathrm{kN}}\\)`),
       equationCard("3 · Line of action", `\\(I_G = \\frac{bL^3}{12} = ${fmt(result.centroidalInertia, 3)}\\;\\mathrm{m^4}\\)<br>\\(y_{CP} = \\mathbf{${fmt(result.centerPressureDepth)}\\;\\mathrm{m}}\\)`),
     ].join("");
-    elements.challengeTitle.textContent = "Predict the plane-surface resultant";
-    elements.challengePrompt.textContent = "Calculate the resultant hydrostatic force normal to the plate. A result within 2% counts as correct.";
+    elements.challengeTitle.textContent = "Predict the force and centre of pressure";
+    elements.challengePrompt.textContent = "Calculate the resultant force and CP depth below the free surface. Both answers must be within 2%.";
+    elements.forcePredictionLabel.textContent = "Resultant force";
+    elements.cpPredictionLabel.textContent = "CP depth";
+    elements.verticalCpGroup.hidden = true;
+    elements.challengeInputs.classList.remove("curved-inputs");
     elements.coachQuestion.placeholder = "Why is the centre of pressure below the centroid?";
     return;
   }
@@ -226,8 +238,12 @@ function renderLesson(result) {
     equationCard("2 · Vertical", `\\(V = bdR + \\frac{1}{4}\\pi bR^2 = ${fmt(result.imaginaryVolume)}\\;\\mathrm{m^3}\\)<br>\\(F_V = \\rho gV = \\mathbf{${fmt(result.verticalKN)}\\;\\mathrm{kN}}\\)<br>\\(x_V = \\frac{V_r(R/2)+V_q(4R/3\\pi)}{V} = \\mathbf{${fmt(result.verticalCenterX)}\\;\\mathrm{m}}\\)`),
     equationCard("3 · Resultant", `\\(F_R = \\sqrt{${fmt(result.horizontalKN)}^2 + ${fmt(result.verticalKN)}^2}\\)<br>\\(F_R = \\mathbf{${fmt(result.resultantKN)}\\;\\mathrm{kN}},\\quad \\theta_R = ${fmt(result.resultantAngle, 1)}^\\circ\\)`),
   ].join("");
-  elements.challengeTitle.textContent = "Predict the curved-surface resultant";
-  elements.challengePrompt.textContent = "Combine the displayed horizontal and vertical components. A result within 2% counts as correct.";
+  elements.challengeTitle.textContent = "Predict the force and component CPs";
+  elements.challengePrompt.textContent = "Calculate the resultant, horizontal CP depth, and vertical CP from the left edge. All answers must be within 2%.";
+  elements.forcePredictionLabel.textContent = "Resultant force";
+  elements.cpPredictionLabel.textContent = "Horizontal CP";
+  elements.verticalCpGroup.hidden = false;
+  elements.challengeInputs.classList.add("curved-inputs");
   elements.coachQuestion.placeholder = "Why does the vertical component equal a fluid weight?";
 }
 
@@ -604,40 +620,75 @@ function handleInput() {
   render();
 }
 
-function challengeAnswer() {
+function challengeAnswers() {
   const result = currentResult();
-  return state.surface === "plane" ? result.forceKN : result.resultantKN;
+  if (state.surface === "plane") {
+    return {
+      force: result.forceKN,
+      horizontalCp: result.centerPressureDepth,
+      verticalCp: null,
+    };
+  }
+  return {
+    force: result.resultantKN,
+    horizontalCp: result.horizontalCenterDepth,
+    verticalCp: result.verticalCenterX,
+  };
+}
+
+function enteredNumber(input) {
+  return input.value.trim() === "" ? NaN : number(input.value);
+}
+
+function answerDirection(prediction, answer) {
+  return prediction < answer ? "low" : "high";
 }
 
 function checkPrediction() {
-  const prediction = number(elements.prediction.value);
-  if (!Number.isFinite(prediction)) {
-    elements.challengeFeedback.textContent = "Enter a numerical prediction in kN first.";
+  const prediction = enteredNumber(elements.prediction);
+  const cpPrediction = enteredNumber(elements.cpPrediction);
+  const verticalCpPrediction = enteredNumber(elements.verticalCpPrediction);
+  const needsVerticalCp = state.surface === "curved";
+  if (
+    !Number.isFinite(prediction)
+    || !Number.isFinite(cpPrediction)
+    || (needsVerticalCp && !Number.isFinite(verticalCpPrediction))
+  ) {
+    elements.challengeFeedback.textContent = needsVerticalCp
+      ? "Enter the resultant, horizontal CP, and vertical CP first."
+      : "Enter both the resultant force and CP depth first.";
     elements.challengeFeedback.className = "challenge-feedback bad";
     return;
   }
   state.attempts += 1;
-  const answer = challengeAnswer();
-  const relativeError = Math.abs(prediction - answer) / answer;
-  if (relativeError <= 0.02) {
+  const answers = challengeAnswers();
+  const forceCorrect = Math.abs(prediction - answers.force) / answers.force <= 0.02;
+  const horizontalCpCorrect = Math.abs(cpPrediction - answers.horizontalCp) / answers.horizontalCp <= 0.02;
+  const verticalCpCorrect = !needsVerticalCp
+    || Math.abs(verticalCpPrediction - answers.verticalCp) / answers.verticalCp <= 0.02;
+  if (forceCorrect && horizontalCpCorrect && verticalCpCorrect) {
     state.answerRevealed = true;
-    elements.challengeFeedback.textContent = `Correct — ${fmt(answer)} kN. Your prediction is within 2%.`;
+    elements.challengeFeedback.textContent = needsVerticalCp
+      ? `Correct — ${fmt(answers.force)} kN, horizontal CP ${fmt(answers.horizontalCp)} m, and vertical CP ${fmt(answers.verticalCp)} m.`
+      : `Correct — ${fmt(answers.force)} kN and CP depth ${fmt(answers.horizontalCp)} m.`;
     elements.challengeFeedback.className = "challenge-feedback good";
     renderReadings(currentResult());
     return;
   }
-  const direction = prediction < answer ? "low" : "high";
-  elements.challengeFeedback.textContent = `Not yet. Your value is ${direction}; check the centroid depth, projected area, and units.`;
+  const corrections = [];
+  if (!forceCorrect) corrections.push(`resultant is ${answerDirection(prediction, answers.force)}`);
+  if (!horizontalCpCorrect) corrections.push(`${needsVerticalCp ? "horizontal CP" : "CP depth"} is ${answerDirection(cpPrediction, answers.horizontalCp)}`);
+  if (!verticalCpCorrect) corrections.push(`vertical CP is ${answerDirection(verticalCpPrediction, answers.verticalCp)}`);
+  elements.challengeFeedback.textContent = `Not yet — ${corrections.join("; ")}. Check the relevant line-of-action formula and units.`;
   elements.challengeFeedback.className = "challenge-feedback warn";
 }
 
 function showHint() {
   state.hintsUsed += 1;
-  const result = currentResult();
   if (state.surface === "plane") {
-    elements.challengeFeedback.textContent = `Use \\(A = ${fmt(result.area)}\\;\\mathrm{m^2}\\) and \\(\\bar y = ${fmt(result.centroidDepth)}\\;\\mathrm{m}\\) in \\(F_R = \\rho g\\bar y A\\). Divide newtons by 1000.`;
+    elements.challengeFeedback.textContent = `First use \\(F_R = \\rho g\\bar y A\\). Then locate the line of action with \\(y_{CP}=\\bar y+I_G\\sin^2\\theta/(\\bar yA)\\).`;
   } else {
-    elements.challengeFeedback.textContent = `Combine \\(F_H = ${fmt(result.horizontalKN)}\\;\\mathrm{kN}\\) and \\(F_V = ${fmt(result.verticalKN)}\\;\\mathrm{kN}\\) using \\(F_R = \\sqrt{F_H^2 + F_V^2}\\).`;
+    elements.challengeFeedback.textContent = `Combine \\(F_H\\) and \\(F_V\\) for the resultant. Use the projected plane-surface formula for \\(y_{H,CP}\\), and the imaginary-volume centroid \\(x_V=\\sum V_i x_i/\\sum V_i\\) for the vertical CP.`;
   }
   elements.challengeFeedback.className = "challenge-feedback warn";
   typesetMath([elements.challengeFeedback]);
@@ -645,8 +696,10 @@ function showHint() {
 
 function revealAnswer() {
   state.answerRevealed = true;
-  const answer = challengeAnswer();
-  elements.challengeFeedback.textContent = `The resultant is ${fmt(answer)} kN. Change one control and try the next case without revealing it.`;
+  const answers = challengeAnswers();
+  elements.challengeFeedback.textContent = state.surface === "plane"
+    ? `Resultant: ${fmt(answers.force)} kN; CP depth: ${fmt(answers.horizontalCp)} m.`
+    : `Resultant: ${fmt(answers.force)} kN; horizontal CP: ${fmt(answers.horizontalCp)} m; vertical CP: ${fmt(answers.verticalCp)} m from the left edge.`;
   elements.challengeFeedback.className = "challenge-feedback good";
   renderReadings(currentResult());
 }
