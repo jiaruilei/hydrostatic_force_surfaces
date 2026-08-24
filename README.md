@@ -1,4 +1,4 @@
-# Hydrostatic Force Lab
+# Hydrostatic Forces (Week 3)
 
 Interactive CE2134 platform for hydrostatic forces on plane and curved surfaces.
 
