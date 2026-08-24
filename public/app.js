@@ -118,6 +118,8 @@ const state = {
   currentCaseTitle: "Current case · self-selected geometry",
   creditedSkills: [],
   transferActive: false,
+  apiConfigured: false,
+  apiConnected: false,
 };
 
 function number(value) {
@@ -318,6 +320,12 @@ function coachFocusLabel(focus) {
   }[focus] || "general concepts";
 }
 
+function coachReadyLabel() {
+  if (state.apiConnected) return "Connected to API";
+  if (state.apiConfigured) return "API configured";
+  return "Built-in guidance ready";
+}
+
 function renderAdaptivePanel() {
   const progress = state.adaptiveProgress;
   const skills = surfaceSkills(state.surface);
@@ -388,7 +396,7 @@ function syncAdaptiveControls() {
   for (const chip of elements.coachChips.querySelectorAll("button")) chip.disabled = locked;
   if (locked) elements.coachStatus.textContent = "Coach paused for independent transfer";
   else if (elements.coachStatus.textContent === "Coach paused for independent transfer") {
-    elements.coachStatus.textContent = "Built-in guidance ready";
+    elements.coachStatus.textContent = coachReadyLabel();
   }
 }
 
@@ -956,6 +964,19 @@ function addCoachMessage(role, text, extraClass = "") {
   return message;
 }
 
+async function loadCoachStatus() {
+  try {
+    const response = await fetch("/api/coach/status");
+    if (!response.ok) throw new Error("Coach status unavailable");
+    const payload = await response.json();
+    state.apiConfigured = Boolean(payload.apiConfigured);
+    if (!state.transferActive) elements.coachStatus.textContent = coachReadyLabel();
+  } catch {
+    state.apiConfigured = false;
+    if (!state.transferActive) elements.coachStatus.textContent = "Built-in guidance ready";
+  }
+}
+
 async function askCoach(question) {
   const cleanQuestion = String(question || "").trim();
   if (!cleanQuestion || state.transferActive) return;
@@ -997,7 +1018,18 @@ async function askCoach(question) {
       { role: "assistant", content: reply },
     );
     state.history = state.history.slice(-8);
-    elements.coachStatus.textContent = payload.source === "openai" ? "AI coaching active" : "Built-in guidance ready";
+    state.apiConfigured = Boolean(payload.apiConfigured);
+    if (payload.source === "openai") {
+      state.apiConnected = true;
+      elements.coachStatus.textContent = "Connected to API";
+    } else if (payload.fallback) {
+      state.apiConnected = false;
+      elements.coachStatus.textContent = "API unavailable · built-in fallback";
+    } else if (payload.guided && state.apiConfigured) {
+      elements.coachStatus.textContent = `${state.apiConnected ? "API connected" : "API configured"} · verified guidance used`;
+    } else {
+      elements.coachStatus.textContent = "Built-in guidance ready";
+    }
   } catch (error) {
     pending.textContent = error.message || "I could not answer just now. Try again in a moment.";
     pending.classList.remove("pending");
@@ -1044,4 +1076,5 @@ elements.coachForm.addEventListener("submit", (event) => {
 const resizeObserver = new ResizeObserver(draw);
 resizeObserver.observe(elements.forceCanvas.parentElement);
 render();
+loadCoachStatus();
 
