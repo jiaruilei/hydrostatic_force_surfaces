@@ -68,7 +68,6 @@ const elements = {
   challengeFeedback: $("challengeFeedback"),
   adaptivePanel: document.querySelector(".adaptive-evaluation"),
   adaptiveBand: $("adaptiveBand"),
-  adaptiveCase: $("adaptiveCase"),
   adaptiveGuidance: $("adaptiveGuidance"),
   masteryGrid: $("masteryGrid"),
   evidenceRow: $("evidenceRow"),
@@ -115,7 +114,6 @@ const state = {
   history: [],
   side: "concave",
   adaptiveProgress: loadAdaptiveProgress(),
-  currentCaseTitle: "Current case · self-selected geometry",
   creditedSkills: [],
   transferActive: false,
   apiConfigured: false,
@@ -336,7 +334,6 @@ function renderAdaptivePanel() {
 
   elements.adaptivePanel.classList.toggle("transfer-active", state.transferActive);
   elements.adaptiveBand.textContent = state.transferActive ? "Independent check" : masteryBand(average);
-  elements.adaptiveCase.textContent = state.currentCaseTitle;
   if (state.transferActive) {
     elements.adaptiveGuidance.textContent = "Solve this unfamiliar case without hints or AI coaching. The geometry is locked until the check is complete.";
   } else if (passed) {
@@ -416,7 +413,6 @@ function applyAdaptiveCase(caseData, transfer = false) {
     state.side = caseData.side;
   }
   state.transferActive = transfer;
-  state.currentCaseTitle = caseData.title;
   resetChallenge();
   elements.challengeFeedback.textContent = transfer
     ? "Independent transfer is active: solve without hints or AI coaching."
@@ -436,7 +432,6 @@ function startTransferCheck() {
 function resetAdaptiveLearning() {
   state.adaptiveProgress = createAdaptiveProgress();
   state.transferActive = false;
-  state.currentCaseTitle = "Current case · self-selected geometry";
   saveAdaptiveProgress();
   resetChallenge();
   render();
@@ -770,7 +765,6 @@ function selectSurface(surface) {
   if (state.surface === surface) return;
   state.transferActive = false;
   state.surface = surface;
-  state.currentCaseTitle = "Current case · self-selected geometry";
   resetChallenge();
   render();
 }
@@ -798,13 +792,11 @@ function resetExperiment() {
     state.side = values.side;
   }
   state.transferActive = false;
-  state.currentCaseTitle = "Default case · live controls";
   resetChallenge();
   render();
 }
 
 function handleInput() {
-  state.currentCaseTitle = "Current case · self-selected geometry";
   resetChallenge();
   render();
 }
@@ -1077,4 +1069,3 @@ const resizeObserver = new ResizeObserver(draw);
 resizeObserver.observe(elements.forceCanvas.parentElement);
 render();
 loadCoachStatus();
-
