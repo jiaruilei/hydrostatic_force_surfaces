@@ -76,6 +76,9 @@ function ruleBasedReply(question, context) {
 
   if (context.surface === "plane") {
     if (q.includes("center") || q.includes("cp") || q.includes("pressure")) {
+      if (context.mode === "challenge" && !context.answerRevealed) {
+        return "Use the line-of-action equation \\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\). Keep vertical depth distinct from distance measured along the inclined plate; I will leave the numerical CP for you to calculate.";
+      }
       return `Pressure increases linearly with vertical depth, so the center of pressure lies below the centroid. Here, \\(\\bar y = ${readable(r.centroidDepth)}\\;\\mathrm{m}\\) and \\(y_{CP} = ${readable(r.centerPressureDepth)}\\;\\mathrm{m}\\). Use \\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\).`;
     }
     if (q.includes("angle") || q.includes("incline")) {
@@ -91,9 +94,15 @@ function ruleBasedReply(question, context) {
   }
 
   if (q.includes("horizontal") || q.includes("projection")) {
+    if (context.mode === "challenge" && !context.answerRevealed) {
+      return "Treat the vertical projection as a plane surface. Find \\(F_H\\) from \\(\\rho g\\bar yA_v\\), then use its projected-area inertia to calculate \\(y_{H,CP}\\). I will leave the numerical result hidden.";
+    }
     return `Treat the vertical projection as a plane surface. Its area is \\(A_v = ${readable(r.projectedArea)}\\;\\mathrm{m^2}\\) and its centroid depth is \\(\\bar y = ${readable(r.projectedCentroidDepth)}\\;\\mathrm{m}\\), so \\(F_H = \\rho g\\bar y A_v = ${readable(r.horizontalKN)}\\;\\mathrm{kN}\\).`;
   }
   if (q.includes("vertical") || q.includes("weight") || q.includes("imaginary")) {
+    if (context.mode === "challenge" && !context.answerRevealed) {
+      return "Find \\(F_V\\) from the weight of the imaginary fluid. Its line of action passes through that volume's centre of mass, so calculate \\(x_V = \\sum V_i x_i/\\sum V_i\\). I will leave the numerical vertical CP hidden.";
+    }
     return `The vertical component equals the weight of the imaginary fluid above the curve. The volume is \\(V = ${readable(r.imaginaryVolume)}\\;\\mathrm{m^3}\\), so \\(F_V = \\rho gV = ${readable(r.verticalKN)}\\;\\mathrm{kN}\\), acting ${r.verticalDirection}. Its line of action passes through the volume's centre of mass at \\(x_V = ${readable(r.verticalCenterX)}\\;\\mathrm{m}\\) from the left edge.`;
   }
   if (q.includes("side") || q.includes("direction")) {
@@ -115,7 +124,7 @@ function coachInstructions() {
     "For plane surfaces, use F_R = rho g y_bar A and y_CP = y_bar + I_G sin^2(theta)/(y_bar A).",
     "For curved surfaces, teach F_H as the force on the vertical projection and F_V as the weight of the imaginary fluid above the curve.",
     "Use the server-verified live state. Do not invent geometry or measurements.",
-    "In Challenge mode, if the answer is not revealed, scaffold without stating the final resultant force.",
+    "In Challenge mode, if the answer is not revealed, scaffold without stating the final resultant force or center-of-pressure values.",
     "Format every mathematical expression as TeX using \\( ... \\) for inline math or \\[ ... \\] for display math; do not use dollar-sign delimiters.",
     "Use TeX commands such as \\rho, \\bar y, subscripts, fractions, and \\mathrm{} for units. Keep ordinary prose outside math delimiters.",
     "Keep replies classroom-friendly, accurate, and under 140 words. Avoid markdown tables and unnecessary blank lines between equations.",
