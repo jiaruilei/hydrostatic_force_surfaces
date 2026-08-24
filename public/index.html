@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Explore hydrostatic forces on plane and curved surfaces with live CE2134 visualisations." />
+  <meta property="og:title" content="Hydrostatic Force Lab" />
+  <meta property="og:description" content="An interactive CE2134 lab for plane and curved hydrostatic surfaces." />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Hydrostatic Force Lab · CE2134</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="lab">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">CE2134 · Fluid Mechanics</p>
+        <h1>Hydrostatic Force Lab</h1>
+      </div>
+      <div class="top-actions">
+        <div class="surface-switch" role="tablist" aria-label="Surface type">
+          <button type="button" id="planeTab" class="active" role="tab" aria-selected="true">Plane surface</button>
+          <button type="button" id="curvedTab" role="tab" aria-selected="false">Curved surface</button>
+        </div>
+        <div class="mode-switch" role="group" aria-label="Learning mode">
+          <button type="button" id="exploreMode" class="active" aria-pressed="true">Explore</button>
+          <button type="button" id="challengeMode" aria-pressed="false">Challenge</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="controls" aria-label="Hydrostatic force controls">
+        <section class="control-group">
+          <div class="section-heading">
+            <span class="step-number">1</span>
+            <div>
+              <h2>Set the fluid</h2>
+              <p>Pressure comes from the fluid's specific weight.</p>
+            </div>
+          </div>
+          <label for="fluidPreset">Fluid</label>
+          <div class="density-row">
+            <select id="fluidPreset">
+              <option value="1000">Water</option>
+              <option value="1025">Seawater</option>
+              <option value="1260">Glycerin</option>
+              <option value="13600">Mercury</option>
+            </select>
+            <input id="density" type="number" min="100" max="14000" step="1" value="1000" aria-label="Fluid density in kilograms per cubic metre" />
+          </div>
+          <p class="unit-note">Density, kg/m³ · g = 9.81 m/s²</p>
+        </section>
+
+        <section class="control-group" id="planeControls">
+          <div class="section-heading">
+            <span class="step-number">2</span>
+            <div>
+              <h2>Position the plate</h2>
+              <p>Change its inclination, size, and submergence.</p>
+            </div>
+          </div>
+
+          <div class="label-row">
+            <label for="planeAngle">Angle from horizontal</label>
+            <span class="live-value" id="planeAngleValue">60°</span>
+          </div>
+          <input id="planeAngle" type="range" min="10" max="90" step="1" value="60" />
+
+          <div class="label-row">
+            <label for="planeTopDepth">Top-edge depth</label>
+            <span class="live-value" id="planeTopDepthValue">1.0 m</span>
+          </div>
+          <input id="planeTopDepth" type="range" min="0" max="8" step="0.1" value="1" />
+
+          <div class="label-row">
+            <label for="planeLength">Plate length</label>
+            <span class="live-value" id="planeLengthValue">2.0 m</span>
+          </div>
+          <input id="planeLength" type="range" min="0.5" max="6" step="0.1" value="2" />
+
+          <div class="label-row">
+            <label for="planeWidth">Plate width</label>
+            <span class="live-value" id="planeWidthValue">2.0 m</span>
+          </div>
+          <input id="planeWidth" type="range" min="0.5" max="6" step="0.1" value="2" />
+        </section>
+
+        <section class="control-group" id="curvedControls" hidden>
+          <div class="section-heading">
+            <span class="step-number">2</span>
+            <div>
+              <h2>Shape the gate</h2>
+              <p>Use a quarter-circle surface, one metre into the page by default.</p>
+            </div>
+          </div>
+
+          <div class="label-row">
+            <label for="curveTopDepth">Depth to top of curve</label>
+            <span class="live-value" id="curveTopDepthValue">4.0 m</span>
+          </div>
+          <input id="curveTopDepth" type="range" min="0" max="8" step="0.1" value="4" />
+
+          <div class="label-row">
+            <label for="curveRadius">Curve radius</label>
+            <span class="live-value" id="curveRadiusValue">2.0 m</span>
+          </div>
+          <input id="curveRadius" type="range" min="0.5" max="5" step="0.1" value="2" />
+
+          <div class="label-row">
+            <label for="curveWidth">Gate width</label>
+            <span class="live-value" id="curveWidthValue">1.0 m</span>
+          </div>
+          <input id="curveWidth" type="range" min="0.5" max="6" step="0.1" value="1" />
+
+          <label>Loaded side</label>
+          <div class="segmented" role="group" aria-label="Loaded side of curved surface">
+            <button type="button" id="concaveSide" class="active" aria-pressed="true">Concave side</button>
+            <button type="button" id="convexSide" aria-pressed="false">Opposite side</button>
+          </div>
+          <p class="unit-note" id="sideDirection">Force acts right and downward.</p>
+        </section>
+
+        <button type="button" class="secondary-button" id="resetButton">Reset this experiment</button>
+      </aside>
+
+      <section class="experiment" aria-live="polite">
+        <div class="lesson-intro">
+          <div>
+            <span class="lesson-kicker" id="lessonKicker">Plane surface</span>
+            <h2 id="lessonTitle">Follow the pressure to its single resultant</h2>
+          </div>
+          <p id="lessonSummary">Change the plate geometry and watch the centroid, pressure distribution, resultant force, and center of pressure move together.</p>
+        </div>
+
+        <div class="reading-bar" id="readingBar"></div>
+
+        <div class="visual-grid">
+          <article class="visual-card canvas-card">
+            <div class="card-heading">
+              <div>
+                <p class="card-eyebrow">Live section view</p>
+                <h3 id="canvasTitle">Inclined rectangular plate</h3>
+              </div>
+              <div class="legend" aria-label="Diagram legend">
+                <span><i class="dot centroid-dot"></i>Centroid</span>
+                <span><i class="dot pressure-dot"></i>Centre of pressure</span>
+              </div>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="forceCanvas" role="img" aria-label="Hydrostatic force diagram"></canvas>
+            </div>
+          </article>
+
+          <article class="visual-card method-card">
+            <div class="card-heading">
+              <div>
+                <p class="card-eyebrow">Lecture method</p>
+                <h3 id="methodTitle">Plane-surface workflow</h3>
+              </div>
+            </div>
+            <div class="method-steps" id="methodSteps"></div>
+            <div class="insight-box">
+              <span>Notice</span>
+              <p id="insightText"></p>
+            </div>
+          </article>
+        </div>
+
+        <article class="result-panel" id="explorePanel">
+          <div class="result-header">
+            <div>
+              <p class="result-label">Calculation trail</p>
+              <h3 id="resultTitle">From centroid depth to centre of pressure</h3>
+            </div>
+            <span class="status-pill">Live</span>
+          </div>
+          <div class="equation-grid" id="equationGrid"></div>
+        </article>
+
+        <article class="result-panel challenge-panel" id="challengePanel" hidden>
+          <div class="result-header">
+            <div>
+              <p class="result-label">Challenge mode</p>
+              <h3 id="challengeTitle">Predict the resultant force</h3>
+            </div>
+            <span class="status-pill challenge">Try first</span>
+          </div>
+          <p class="challenge-prompt" id="challengePrompt"></p>
+          <div class="challenge-form">
+            <label for="prediction">Your prediction
+              <span class="input-with-unit">
+                <input id="prediction" type="number" step="0.01" inputmode="decimal" />
+                <span>kN</span>
+              </span>
+            </label>
+            <button type="button" class="primary-button" id="checkPrediction">Check</button>
+            <button type="button" class="secondary-button" id="hintButton">Hint</button>
+            <button type="button" class="text-button" id="revealButton">Reveal</button>
+          </div>
+          <p class="challenge-feedback" id="challengeFeedback">Work through the lecture method before checking.</p>
+        </article>
+      </section>
+    </main>
+
+    <section class="coach-card" aria-labelledby="coachHeading">
+      <div class="coach-header">
+        <div>
+          <p class="card-eyebrow">Reason it through</p>
+          <h2 id="coachHeading">Ask Prof. Gary's AI Proxy</h2>
+        </div>
+        <span class="coach-status" id="coachStatus">Built-in guidance ready</span>
+      </div>
+      <div class="coach-layout">
+        <div>
+          <div class="coach-log" id="coachLog" aria-live="polite">
+            <div class="coach-message coach">Choose a surface and change the geometry. Ask me why the force or line of action moves.</div>
+          </div>
+          <div class="coach-chips" id="coachChips"></div>
+        </div>
+        <form class="coach-form" id="coachForm">
+          <label for="coachQuestion">Your question</label>
+          <textarea id="coachQuestion" maxlength="1200" placeholder="Why is the centre of pressure below the centroid?"></textarea>
+          <button type="submit">Ask coach</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
+
