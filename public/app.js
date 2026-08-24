@@ -31,6 +31,9 @@ const elements = {
   planeLengthValue: $("planeLengthValue"),
   planeWidth: $("planeWidth"),
   planeWidthValue: $("planeWidthValue"),
+  planeUpperSide: $("planeUpperSide"),
+  planeLowerSide: $("planeLowerSide"),
+  planeSideDirection: $("planeSideDirection"),
   curveTopDepth: $("curveTopDepth"),
   curveTopDepthValue: $("curveTopDepthValue"),
   curveRadius: $("curveRadius"),
@@ -83,7 +86,7 @@ const elements = {
 };
 
 const defaults = {
-  plane: { density: 1000, angle: 60, topDepth: 1, length: 2, width: 2 },
+  plane: { density: 1000, angle: 60, topDepth: 1, length: 2, width: 2, side: "upper" },
   curved: { density: 1000, topDepth: 4, radius: 2, width: 1, side: "concave" },
 };
 
@@ -112,6 +115,7 @@ const state = {
   attempts: 0,
   hintsUsed: 0,
   history: [],
+  planeSide: "upper",
   side: "concave",
   adaptiveProgress: loadAdaptiveProgress(),
   creditedSkills: [],
@@ -131,6 +135,7 @@ function planeInput() {
     topDepth: number(elements.planeTopDepth.value),
     length: number(elements.planeLength.value),
     width: number(elements.planeWidth.value),
+    side: state.planeSide,
   };
 }
 
@@ -295,7 +300,7 @@ function renderLesson(result) {
 
 function renderChips() {
   const prompts = state.surface === "plane"
-    ? ["Give me a hint", "Why does angle matter?", "Explain the centre of pressure"]
+    ? ["Give me a hint", "Why does angle matter?", "Explain the centre of pressure", "Which way does the force act?"]
     : ["Give me a hint", "Explain the vertical projection", "Which way do the components act?"];
   elements.coachChips.innerHTML = "";
   for (const prompt of prompts) {
@@ -569,6 +574,9 @@ function drawPlane(result) {
   const ty = result.sinTheta;
   const nx = -ty;
   const ny = tx;
+  const forceSign = result.side === "lower" ? -1 : 1;
+  const forceNx = nx * forceSign;
+  const forceNy = ny * forceSign;
 
   ctx.save();
   ctx.strokeStyle = "rgba(71,85,105,.5)";
@@ -604,7 +612,16 @@ function drawPlane(result) {
     const py = y1 + (y2 - y1) * t;
     const depthRatio = (result.topDepth + t * result.length * result.sinTheta) / Math.max(result.bottomDepth, 0.2);
     const magnitude = 16 + 33 * depthRatio;
-    arrow(ctx, px - nx * 4, py - ny * 4, px + nx * magnitude, py + ny * magnitude, "#1597cf", 1.8, 6);
+    arrow(
+      ctx,
+      px - forceNx * 4,
+      py - forceNy * 4,
+      px + forceNx * magnitude,
+      py + forceNy * magnitude,
+      "#1597cf",
+      1.8,
+      6,
+    );
   }
 
   const centroidT = 0.5;
@@ -613,10 +630,18 @@ function drawPlane(result) {
   const cy = y1 + (y2 - y1) * centroidT;
   const cpx = x1 + (x2 - x1) * cpT;
   const cpy = y1 + (y2 - y1) * cpT;
-  calloutMarker(ctx, cx, cy, "#2563eb", "Centroid", cx - nx * 31, cy - ny * 31 - 18);
-  calloutMarker(ctx, cpx, cpy, "#ef4444", "Centre of pressure", cpx - nx * 31, cpy - ny * 31 + 22);
-  arrow(ctx, cpx, cpy, cpx + nx * 76, cpy + ny * 76, "#ef4444", 3, 10);
-  boxedLabel(ctx, `Fᵣ ${fmt(result.forceKN)} kN`, cpx + nx * 85, cpy + ny * 85, "#b91c1c", nx < 0 ? "right" : "left", 800);
+  calloutMarker(ctx, cx, cy, "#2563eb", "Centroid", cx - forceNx * 31, cy - forceNy * 31 - 18);
+  calloutMarker(ctx, cpx, cpy, "#ef4444", "Centre of pressure", cpx - forceNx * 31, cpy - forceNy * 31 + 22);
+  arrow(ctx, cpx, cpy, cpx + forceNx * 76, cpy + forceNy * 76, "#ef4444", 3, 10);
+  boxedLabel(
+    ctx,
+    `Fᵣ ${fmt(result.forceKN)} kN`,
+    cpx + forceNx * 85,
+    cpy + forceNy * 85,
+    "#b91c1c",
+    forceNx < 0 ? "right" : "left",
+    800,
+  );
 
   const angleRadius = 36;
   ctx.save();
@@ -744,6 +769,8 @@ function render() {
   setPressed(elements.curvedTab, state.surface === "curved", "aria-selected");
   setPressed(elements.exploreMode, state.mode === "explore");
   setPressed(elements.challengeMode, state.mode === "challenge");
+  setPressed(elements.planeUpperSide, state.planeSide === "upper");
+  setPressed(elements.planeLowerSide, state.planeSide === "lower");
   setPressed(elements.concaveSide, state.side === "concave");
   setPressed(elements.convexSide, state.side === "convex");
   elements.planeControls.hidden = state.surface !== "plane";
@@ -751,6 +778,10 @@ function render() {
   elements.explorePanel.hidden = state.mode !== "explore";
   elements.challengePanel.hidden = state.mode !== "challenge";
   elements.readingBar.hidden = state.mode === "challenge";
+  const planeVerticalDirection = result.angle >= 89.95 ? "" : ` and ${result.verticalDirection}`;
+  if (state.surface === "plane") {
+    elements.planeSideDirection.textContent = `Force acts ${result.horizontalDirection}${planeVerticalDirection}, normal to the plate.`;
+  }
   elements.sideDirection.textContent = `Force acts ${result.horizontalDirection} and ${result.verticalDirection}.`;
   renderReadings(result);
   renderLesson(result);
@@ -785,6 +816,7 @@ function resetExperiment() {
     elements.planeTopDepth.value = values.topDepth;
     elements.planeLength.value = values.length;
     elements.planeWidth.value = values.width;
+    state.planeSide = values.side;
   } else {
     elements.curveTopDepth.value = values.topDepth;
     elements.curveRadius.value = values.radius;
@@ -1033,6 +1065,8 @@ elements.planeTab.addEventListener("click", () => selectSurface("plane"));
 elements.curvedTab.addEventListener("click", () => selectSurface("curved"));
 elements.exploreMode.addEventListener("click", () => selectMode("explore"));
 elements.challengeMode.addEventListener("click", () => selectMode("challenge"));
+elements.planeUpperSide.addEventListener("click", () => { state.planeSide = "upper"; handleInput(); });
+elements.planeLowerSide.addEventListener("click", () => { state.planeSide = "lower"; handleInput(); });
 elements.concaveSide.addEventListener("click", () => { state.side = "concave"; handleInput(); });
 elements.convexSide.addEventListener("click", () => { state.side = "convex"; handleInput(); });
 elements.resetButton.addEventListener("click", resetExperiment);
