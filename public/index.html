@@ -235,6 +235,25 @@
             </div>
           </div>
           <p class="challenge-feedback" id="challengeFeedback">Work through the lecture method before checking.</p>
+          <section class="adaptive-evaluation" aria-labelledby="adaptiveHeading">
+            <div class="adaptive-heading">
+              <div>
+                <p class="result-label">Adaptive learning</p>
+                <h4 id="adaptiveHeading">Challenge-driven mastery</h4>
+              </div>
+              <span class="adaptive-band" id="adaptiveBand">Foundation</span>
+            </div>
+            <p class="adaptive-case" id="adaptiveCase">Current case · self-selected geometry</p>
+            <p class="adaptive-guidance" id="adaptiveGuidance"></p>
+            <div class="mastery-grid" id="masteryGrid"></div>
+            <div class="evidence-row" id="evidenceRow"></div>
+            <p class="adaptive-storage-note">Saved on this device: answer evidence, support usage, and chat topic categories. Chat messages are not stored in the progress record.</p>
+            <div class="adaptive-actions">
+              <button type="button" class="secondary-button" id="nextAdaptiveCase">Load recommended case</button>
+              <button type="button" class="primary-button" id="startTransferCheck" disabled>Start independent transfer</button>
+              <button type="button" class="text-button" id="resetAdaptiveProgress">Reset progress</button>
+            </div>
+          </section>
         </article>
       </section>
     </main>
@@ -257,7 +276,7 @@
         <form class="coach-form" id="coachForm">
           <label for="coachQuestion">Your question</label>
           <textarea id="coachQuestion" maxlength="1200" placeholder="Why is the centre of pressure below the centroid?"></textarea>
-          <button type="submit">Ask coach</button>
+          <button type="submit" id="coachSubmit">Ask coach</button>
         </form>
       </div>
     </section>
