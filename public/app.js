@@ -938,10 +938,18 @@ function revealAnswer() {
   renderAdaptivePanel();
 }
 
+function compactCoachText(text) {
+  return String(text || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+}
+
 function addCoachMessage(role, text, extraClass = "") {
   const message = document.createElement("div");
   message.className = `coach-message ${role} ${extraClass}`.trim();
-  message.textContent = text;
+  message.textContent = compactCoachText(text);
   elements.coachLog.append(message);
   elements.coachLog.scrollTop = elements.coachLog.scrollHeight;
   typesetMath([message]);
@@ -980,12 +988,13 @@ async function askCoach(question) {
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Coach request failed.");
-    pending.textContent = payload.reply;
+    const reply = compactCoachText(payload.reply);
+    pending.textContent = reply;
     pending.classList.remove("pending");
     typesetMath([pending]);
     state.history.push(
       { role: "user", content: cleanQuestion },
-      { role: "assistant", content: payload.reply },
+      { role: "assistant", content: reply },
     );
     state.history = state.history.slice(-8);
     elements.coachStatus.textContent = payload.source === "openai" ? "AI coaching active" : "Built-in guidance ready";
