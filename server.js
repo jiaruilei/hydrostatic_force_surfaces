@@ -94,7 +94,7 @@ function ruleBasedReply(question, context) {
     return `Treat the vertical projection as a plane surface. Its area is \\(A_v = ${readable(r.projectedArea)}\\;\\mathrm{m^2}\\) and its centroid depth is \\(\\bar y = ${readable(r.projectedCentroidDepth)}\\;\\mathrm{m}\\), so \\(F_H = \\rho g\\bar y A_v = ${readable(r.horizontalKN)}\\;\\mathrm{kN}\\).`;
   }
   if (q.includes("vertical") || q.includes("weight") || q.includes("imaginary")) {
-    return `The vertical component equals the weight of the imaginary fluid above the curve. The volume is \\(V = ${readable(r.imaginaryVolume)}\\;\\mathrm{m^3}\\), so \\(F_V = \\rho gV = ${readable(r.verticalKN)}\\;\\mathrm{kN}\\), acting ${r.verticalDirection}.`;
+    return `The vertical component equals the weight of the imaginary fluid above the curve. The volume is \\(V = ${readable(r.imaginaryVolume)}\\;\\mathrm{m^3}\\), so \\(F_V = \\rho gV = ${readable(r.verticalKN)}\\;\\mathrm{kN}\\), acting ${r.verticalDirection}. Its line of action passes through the volume's centre of mass at \\(x_V = ${readable(r.verticalCenterX)}\\;\\mathrm{m}\\) from the left edge.`;
   }
   if (q.includes("side") || q.includes("direction")) {
     return `Every curved plate has two sides. The selected ${r.side} loading makes the horizontal component act ${r.horizontalDirection} and the vertical component act ${r.verticalDirection}; the magnitudes come from the same projection and imaginary-volume steps.`;
@@ -151,6 +151,7 @@ function formatContext(context) {
     `Loaded side: ${r.side}`,
     `Horizontal force: ${r.horizontalKN} kN, ${r.horizontalDirection}`,
     `Vertical force: ${r.verticalKN} kN, ${r.verticalDirection}`,
+    `Vertical center of pressure: ${r.verticalCenterX} m from the left edge (center-of-mass line)`,
     `Resultant force: ${r.resultantKN} kN`,
     `Resultant angle: ${r.resultantAngle} degrees`,
   ].join("\n");
