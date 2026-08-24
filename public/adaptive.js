@@ -10,7 +10,6 @@ export const ADAPTIVE_CASES = {
   plane: {
     foundation: [
       {
-        title: "Foundation · vertical plate",
         density: 1000,
         angle: 90,
         topDepth: 3,
@@ -20,7 +19,6 @@ export const ADAPTIVE_CASES = {
     ],
     practice: [
       {
-        title: "Practice · inclined freshwater plate",
         density: 1000,
         angle: 60,
         topDepth: 1,
@@ -28,7 +26,6 @@ export const ADAPTIVE_CASES = {
         width: 2,
       },
       {
-        title: "Practice · deeper inclined plate",
         density: 1000,
         angle: 42,
         topDepth: 2.2,
@@ -37,7 +34,6 @@ export const ADAPTIVE_CASES = {
       },
     ],
     transfer: {
-      title: "Independent transfer · seawater plate",
       density: 1025,
       angle: 37,
       topDepth: 0.7,
@@ -48,7 +44,6 @@ export const ADAPTIVE_CASES = {
   curved: {
     foundation: [
       {
-        title: "Foundation · quarter-circle gate",
         density: 1000,
         topDepth: 4,
         radius: 2,
@@ -58,7 +53,6 @@ export const ADAPTIVE_CASES = {
     ],
     practice: [
       {
-        title: "Practice · compact curved gate",
         density: 1000,
         topDepth: 2.5,
         radius: 1.5,
@@ -66,7 +60,6 @@ export const ADAPTIVE_CASES = {
         side: "concave",
       },
       {
-        title: "Practice · opposite-side loading",
         density: 1000,
         topDepth: 3.2,
         radius: 2.4,
@@ -75,7 +68,6 @@ export const ADAPTIVE_CASES = {
       },
     ],
     transfer: {
-      title: "Independent transfer · seawater gate",
       density: 1025,
       topDepth: 1.2,
       radius: 2.7,
@@ -197,4 +189,3 @@ export function classifyCoachFocus(question, surface) {
   if (/\b(force|resultant|component|magnitude)\b/.test(text)) return "resultant";
   return "general";
 }
-
