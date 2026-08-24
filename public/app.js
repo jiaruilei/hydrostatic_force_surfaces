@@ -635,7 +635,7 @@ function drawPlane(result) {
   arrow(ctx, cpx, cpy, cpx + forceNx * 76, cpy + forceNy * 76, "#ef4444", 3, 10);
   boxedLabel(
     ctx,
-    `Fᵣ ${fmt(result.forceKN)} kN`,
+    state.mode === "challenge" ? "Fᵣ" : `Fᵣ ${fmt(result.forceKN)} kN`,
     cpx + forceNx * 85,
     cpy + forceNy * 85,
     "#b91c1c",
