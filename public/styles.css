@@ -185,6 +185,25 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
 .challenge-feedback.good { color:var(--good); }
 .challenge-feedback.warn { color:var(--warn); }
 .challenge-feedback.bad { color:var(--bad); }
+.adaptive-evaluation { margin-top:14px; padding:13px; border:1px solid #d7e2ef; border-radius:11px; background:#f8fbff; }
+.adaptive-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.adaptive-heading h4 { margin:1px 0 0; color:#233651; font-size:14px; }
+.adaptive-band { padding:5px 8px; border-radius:999px; color:#1d4ed8; background:#dbeafe; font-size:10px; font-weight:850; text-transform:uppercase; }
+.adaptive-case { margin:9px 0 2px; color:#253b59; font-size:12px; font-weight:800; }
+.adaptive-guidance { margin:0 0 10px; color:var(--muted); font-size:11px; line-height:1.45; }
+.mastery-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.mastery-item { padding:9px; border:1px solid #e1e8f1; border-radius:9px; background:#fff; }
+.mastery-label { display:flex; align-items:baseline; justify-content:space-between; gap:8px; color:#42526a; font-size:10px; font-weight:800; }
+.mastery-track { height:6px; margin-top:7px; overflow:hidden; border-radius:999px; background:#e5edf7; }
+.mastery-fill { height:100%; border-radius:inherit; background:linear-gradient(90deg,#60a5fa,#2563eb); }
+.evidence-row { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
+.evidence-chip { padding:5px 7px; border-radius:7px; color:#53657b; background:#eaf1f9; font-size:10px; font-weight:750; }
+.adaptive-storage-note { margin:8px 0 0; color:#718096; font-size:10px; line-height:1.4; }
+.adaptive-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.adaptive-actions button { padding:8px 10px; font-size:11px; }
+.adaptive-actions button:disabled { cursor:not-allowed; opacity:.5; }
+.transfer-active { border-color:#f2c46d; background:#fffaf0; }
+.transfer-active .adaptive-band { color:#92400e; background:#fef3c7; }
 
 .coach-card { padding:20px; border-top:1px solid var(--line); background:linear-gradient(135deg,#f8fbff,#eef5ff); }
 .coach-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
@@ -230,6 +249,7 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
   .coach-layout { grid-template-columns:1fr; }
   .challenge-form { grid-template-columns:1fr; }
   .challenge-actions { justify-content:flex-start; }
+  .mastery-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .canvas-wrap { height:390px; }
 }
 @media (max-width:470px) {
@@ -243,5 +263,8 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
   .challenge-inputs,.challenge-inputs.curved-inputs { grid-template-columns:1fr; }
   .challenge-actions { align-items:stretch; flex-direction:column; }
   .challenge-actions button { width:100%; }
+  .mastery-grid { grid-template-columns:1fr; }
+  .adaptive-actions { align-items:stretch; flex-direction:column; }
+  .adaptive-actions button { width:100%; }
 }
 
