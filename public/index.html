@@ -107,6 +107,13 @@
             <span class="live-value" id="planeWidthValue">2.0 m</span>
           </div>
           <input id="planeWidth" type="range" min="0.5" max="6" step="0.1" value="2" />
+
+          <label>Loaded side</label>
+          <div class="segmented" role="group" aria-label="Loaded side of plane surface">
+            <button type="button" id="planeUpperSide" class="active" aria-pressed="true">Upper side</button>
+            <button type="button" id="planeLowerSide" aria-pressed="false">Lower side</button>
+          </div>
+          <p class="unit-note" id="planeSideDirection">Force acts left and downward, normal to the plate.</p>
         </section>
 
         <section class="control-group" id="curvedControls" hidden>
