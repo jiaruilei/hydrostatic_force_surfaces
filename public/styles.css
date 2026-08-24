@@ -157,7 +157,6 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
 .method-step { position:relative; padding:12px 12px 12px 43px; border:1px solid #e1e8f1; border-radius:11px; background:#fbfdff; }
 .method-step b { position:absolute; top:11px; left:11px; display:grid; width:23px; height:23px; place-items:center; border-radius:7px; color:var(--blue); background:#e8f0ff; font-size:11px; }
 .method-step h4 { margin:0 0 3px; color:#233651; font-size:13px; }
-.method-step p { margin:0; color:var(--muted); font-size:11px; line-height:1.45; }
 .formula { display:block; margin-top:5px; color:#172b4d; font-family:inherit; font-size:13px; font-weight:700; line-height:1.25; }
 
 .result-panel { margin-top:12px; padding:15px; border:1px solid var(--line); border-radius:13px; background:#fff; }
