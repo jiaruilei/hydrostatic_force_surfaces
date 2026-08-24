@@ -15,6 +15,13 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const rateBuckets = new Map();
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT = Number(process.env.COACH_RATE_LIMIT) || 30;
+const GUIDED_COACH_PROMPTS = new Set([
+  "give me a hint",
+  "why does angle matter?",
+  "explain the centre of pressure",
+  "explain the vertical projection",
+  "which way do the components act?",
+]);
 
 app.set("trust proxy", 1);
 app.use(express.json({ limit: "32kb" }));
@@ -95,9 +102,9 @@ function ruleBasedReply(question, context) {
 
   if (q.includes("horizontal") || q.includes("projection")) {
     if (context.mode === "challenge" && !context.answerRevealed) {
-      return "Treat the vertical projection as a plane surface. Find \\(F_H\\) from \\(\\rho g\\bar yA_v\\), then use its projected-area inertia to calculate \\(y_{H,CP}\\). I will leave the numerical result hidden.";
+      return `Replace the curved surface with its vertical rectangular projection, whose area is \\(A_v=bR\\). Find the horizontal force from \\(F_H=\\rho g\\bar yA_v\\), then use the projected-area inertia to calculate \\(y_{H,CP}\\). For the selected ${r.side} loading, \\(F_H\\) acts ${r.horizontalDirection}. The curved geometry is treated separately when calculating the vertical component.`;
     }
-    return `Treat the vertical projection as a plane surface. Its area is \\(A_v = ${readable(r.projectedArea)}\\;\\mathrm{m^2}\\) and its centroid depth is \\(\\bar y = ${readable(r.projectedCentroidDepth)}\\;\\mathrm{m}\\), so \\(F_H = \\rho g\\bar y A_v = ${readable(r.horizontalKN)}\\;\\mathrm{kN}\\).`;
+    return `Replace the curved surface with its vertical rectangular projection. Its area is \\(A_v=${readable(r.projectedArea)}\\;\\mathrm{m^2}\\) and its centroid depth is \\(\\bar y=${readable(r.projectedCentroidDepth)}\\;\\mathrm{m}\\), so \\(F_H=\\rho g\\bar yA_v=${readable(r.horizontalKN)}\\;\\mathrm{kN}\\). For the selected ${r.side} loading, this horizontal component acts ${r.horizontalDirection}. The curved geometry is treated separately when calculating the vertical component.`;
   }
   if (q.includes("vertical") || q.includes("weight") || q.includes("imaginary")) {
     if (context.mode === "challenge" && !context.answerRevealed) {
@@ -109,7 +116,7 @@ function ruleBasedReply(question, context) {
     return `Every curved plate has two sides. The selected ${r.side} loading makes the horizontal component act ${r.horizontalDirection} and the vertical component act ${r.verticalDirection}; the magnitudes come from the same projection and imaginary-volume steps.`;
   }
   if (q.includes("hint") || q.includes("start")) {
-    return "Split the curved-surface force into components: horizontal force on the vertical projection, then vertical weight of the imaginary fluid. Combine them using \\(F_R = \\sqrt{F_H^2 + F_V^2}\\).";
+    return "Start with the vertical projection: \\(A_v=bR\\) and \\(F_H=\\rho g\\bar yA_v\\). For the vertical component, find the complete imaginary-fluid volume and use \\(F_V=\\rho gV_{\\mathrm{imaginary}}\\), because it is a fluid weight rather than a pressure force on an area. Finally, combine the components with \\(F_R=\\sqrt{F_H^2+F_V^2}\\).";
   }
   if (context.mode === "challenge" && !context.answerRevealed) {
     return "Find F-H and F-V separately, then combine them. I will keep the final resultant hidden while the challenge is active.";
@@ -123,11 +130,12 @@ function coachInstructions() {
     "Teach forces on inclined plane surfaces and quarter-circle curved surfaces.",
     "For plane surfaces, use F_R = rho g y_bar A and y_CP = y_bar + I_G sin^2(theta)/(y_bar A).",
     "For curved surfaces, teach F_H as the force on the vertical projection and F_V as the weight of the imaginary fluid above the curve.",
+    "For the vertical component, always use F_V = rho g V_imaginary; never substitute an imaginary area for the fluid volume.",
     "Use the server-verified live state. Do not invent geometry or measurements.",
     "In Challenge mode, if the answer is not revealed, scaffold without stating the final resultant force or center-of-pressure values.",
     "Format every mathematical expression as TeX using \\( ... \\) for inline math or \\[ ... \\] for display math; do not use dollar-sign delimiters.",
     "Use TeX commands such as \\rho, \\bar y, subscripts, fractions, and \\mathrm{} for units. Keep ordinary prose outside math delimiters.",
-    "Keep replies classroom-friendly, accurate, and under 140 words. Avoid markdown tables and unnecessary blank lines between equations.",
+    "Keep replies classroom-friendly, accurate, and under 140 words. Avoid markdown tables and unnecessary blank lines between equations. Always finish with a complete sentence.",
   ].join("\n");
 }
 
@@ -187,7 +195,8 @@ app.post("/api/coach", coachRateLimit, async (req, res) => {
   const context = verifiedContext(req.body?.context);
   const history = cleanHistory(req.body?.history);
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return res.json({ reply: ruleBasedReply(question, context), source: "built-in" });
+  const guidedPrompt = GUIDED_COACH_PROMPTS.has(question.toLowerCase());
+  if (!apiKey || guidedPrompt) return res.json({ reply: ruleBasedReply(question, context), source: "built-in" });
 
   try {
     const response = await fetch("https://api.openai.com/v1/responses", {
@@ -203,7 +212,7 @@ app.post("/api/coach", coachRateLimit, async (req, res) => {
           ...history,
           { role: "user", content: `Live state:\n${formatContext(context)}\n\nStudent question: ${question}` },
         ],
-        max_output_tokens: 350,
+        max_output_tokens: 700,
       }),
     });
     if (!response.ok) throw new Error(`OpenAI API returned ${response.status}`);
