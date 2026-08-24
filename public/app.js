@@ -1,4 +1,17 @@
 import { curvedForces, planeForces } from "./calculations.js";
+import {
+  SKILL_LABELS,
+  averageMastery,
+  chooseAdaptiveCase,
+  classifyCoachFocus,
+  createAdaptiveProgress,
+  masteryBand,
+  normaliseAdaptiveProgress,
+  surfaceSkills,
+  transferCase,
+  transferUnlocked,
+  updateSkillMastery,
+} from "./adaptive.js";
 
 const $ = (id) => document.getElementById(id);
 const elements = {
@@ -53,17 +66,45 @@ const elements = {
   hintButton: $("hintButton"),
   revealButton: $("revealButton"),
   challengeFeedback: $("challengeFeedback"),
+  adaptivePanel: document.querySelector(".adaptive-evaluation"),
+  adaptiveBand: $("adaptiveBand"),
+  adaptiveCase: $("adaptiveCase"),
+  adaptiveGuidance: $("adaptiveGuidance"),
+  masteryGrid: $("masteryGrid"),
+  evidenceRow: $("evidenceRow"),
+  nextAdaptiveCase: $("nextAdaptiveCase"),
+  startTransferCheck: $("startTransferCheck"),
+  resetAdaptiveProgress: $("resetAdaptiveProgress"),
   coachStatus: $("coachStatus"),
   coachLog: $("coachLog"),
   coachChips: $("coachChips"),
   coachForm: $("coachForm"),
   coachQuestion: $("coachQuestion"),
+  coachSubmit: $("coachSubmit"),
 };
 
 const defaults = {
   plane: { density: 1000, angle: 60, topDepth: 1, length: 2, width: 2 },
   curved: { density: 1000, topDepth: 4, radius: 2, width: 1, side: "concave" },
 };
+
+const ADAPTIVE_STORAGE_KEY = "hydrostatic-adaptive-progress-v1";
+
+function loadAdaptiveProgress() {
+  try {
+    return normaliseAdaptiveProgress(JSON.parse(localStorage.getItem(ADAPTIVE_STORAGE_KEY) || "{}"));
+  } catch {
+    return createAdaptiveProgress();
+  }
+}
+
+function saveAdaptiveProgress() {
+  try {
+    localStorage.setItem(ADAPTIVE_STORAGE_KEY, JSON.stringify(state.adaptiveProgress));
+  } catch {
+    // Progress remains available for the current session when storage is unavailable.
+  }
+}
 
 const state = {
   surface: "plane",
@@ -73,6 +114,10 @@ const state = {
   hintsUsed: 0,
   history: [],
   side: "concave",
+  adaptiveProgress: loadAdaptiveProgress(),
+  currentCaseTitle: "Current case · self-selected geometry",
+  creditedSkills: [],
+  transferActive: false,
 };
 
 function number(value) {
@@ -120,6 +165,7 @@ function resetChallenge() {
   state.answerRevealed = false;
   state.attempts = 0;
   state.hintsUsed = 0;
+  state.creditedSkills = [];
   elements.prediction.value = "";
   elements.cpPrediction.value = "";
   elements.verticalCpPrediction.value = "";
@@ -259,6 +305,133 @@ function renderChips() {
     button.addEventListener("click", () => askCoach(prompt));
     elements.coachChips.append(button);
   }
+}
+
+function coachFocusLabel(focus) {
+  return {
+    force: "resultant force",
+    cp: "plane CP",
+    resultant: "curved resultant",
+    horizontalCp: "horizontal CP",
+    verticalCp: "vertical CP",
+    general: "general concepts",
+  }[focus] || "general concepts";
+}
+
+function renderAdaptivePanel() {
+  const progress = state.adaptiveProgress;
+  const skills = surfaceSkills(state.surface);
+  const average = averageMastery(progress, state.surface);
+  const unlocked = transferUnlocked(progress, state.surface);
+  const passed = progress.transferPassed[state.surface];
+  const focus = progress.lastCoachFocus;
+
+  elements.adaptivePanel.classList.toggle("transfer-active", state.transferActive);
+  elements.adaptiveBand.textContent = state.transferActive ? "Independent check" : masteryBand(average);
+  elements.adaptiveCase.textContent = state.currentCaseTitle;
+  if (state.transferActive) {
+    elements.adaptiveGuidance.textContent = "Solve this unfamiliar case without hints or AI coaching. The geometry is locked until the check is complete.";
+  } else if (passed) {
+    elements.adaptiveGuidance.textContent = "Independent transfer passed. Continue with new cases to strengthen retention.";
+  } else if (unlocked) {
+    elements.adaptiveGuidance.textContent = "All current skills have enough evidence for an independent transfer check.";
+  } else {
+    elements.adaptiveGuidance.textContent = `The next case follows your Challenge results. Recent chat questions adjust support toward ${coachFocusLabel(focus)}, but do not change mastery scores.`;
+  }
+
+  elements.masteryGrid.innerHTML = skills.map((skill) => {
+    const value = Math.round(progress.mastery[state.surface][skill] * 100);
+    return `<div class="mastery-item">
+      <div class="mastery-label"><span>${SKILL_LABELS[skill]}</span><span>${value}%</span></div>
+      <div class="mastery-track" role="progressbar" aria-label="${SKILL_LABELS[skill]} mastery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${value}">
+        <div class="mastery-fill" style="width:${value}%"></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  elements.evidenceRow.innerHTML = [
+    `Solved: ${progress.completed[state.surface]}`,
+    `Attempts: ${progress.totalAttempts}`,
+    `Independent first tries: ${progress.independentSolves}`,
+    `Hints: ${progress.hints}`,
+    `Reveals: ${progress.reveals}`,
+    `Coach turns: ${progress.coachTurns}`,
+    `Transfer: ${passed ? "passed" : "not yet"}`,
+  ].map((item) => `<span class="evidence-chip">${item}</span>`).join("");
+
+  elements.nextAdaptiveCase.textContent = state.answerRevealed ? "Next adaptive case" : "Load recommended case";
+  elements.nextAdaptiveCase.disabled = state.transferActive;
+  elements.startTransferCheck.disabled = state.transferActive || !unlocked || passed;
+  elements.startTransferCheck.textContent = passed ? "Transfer passed" : "Start independent transfer";
+}
+
+function syncAdaptiveControls() {
+  const locked = state.mode === "challenge" && state.transferActive;
+  for (const control of [
+    elements.fluidPreset,
+    elements.density,
+    elements.planeAngle,
+    elements.planeTopDepth,
+    elements.planeLength,
+    elements.planeWidth,
+    elements.curveTopDepth,
+    elements.curveRadius,
+    elements.curveWidth,
+    elements.concaveSide,
+    elements.convexSide,
+    elements.resetButton,
+  ]) control.disabled = locked;
+  elements.hintButton.hidden = locked;
+  elements.revealButton.hidden = locked;
+  elements.coachQuestion.disabled = locked;
+  elements.coachSubmit.disabled = locked;
+  for (const chip of elements.coachChips.querySelectorAll("button")) chip.disabled = locked;
+  if (locked) elements.coachStatus.textContent = "Coach paused for independent transfer";
+  else if (elements.coachStatus.textContent === "Coach paused for independent transfer") {
+    elements.coachStatus.textContent = "Built-in guidance ready";
+  }
+}
+
+function applyAdaptiveCase(caseData, transfer = false) {
+  elements.density.value = caseData.density;
+  const matchingFluid = [...elements.fluidPreset.options].find((option) => option.value === String(caseData.density));
+  elements.fluidPreset.value = matchingFluid ? matchingFluid.value : "";
+  if (state.surface === "plane") {
+    elements.planeAngle.value = caseData.angle;
+    elements.planeTopDepth.value = caseData.topDepth;
+    elements.planeLength.value = caseData.length;
+    elements.planeWidth.value = caseData.width;
+  } else {
+    elements.curveTopDepth.value = caseData.topDepth;
+    elements.curveRadius.value = caseData.radius;
+    elements.curveWidth.value = caseData.width;
+    state.side = caseData.side;
+  }
+  state.transferActive = transfer;
+  state.currentCaseTitle = caseData.title;
+  resetChallenge();
+  elements.challengeFeedback.textContent = transfer
+    ? "Independent transfer is active: solve without hints or AI coaching."
+    : "A new case has been selected from your current mastery level.";
+  render();
+}
+
+function loadRecommendedCase() {
+  applyAdaptiveCase(chooseAdaptiveCase(state.surface, state.adaptiveProgress));
+}
+
+function startTransferCheck() {
+  if (!transferUnlocked(state.adaptiveProgress, state.surface)) return;
+  applyAdaptiveCase(transferCase(state.surface), true);
+}
+
+function resetAdaptiveLearning() {
+  state.adaptiveProgress = createAdaptiveProgress();
+  state.transferActive = false;
+  state.currentCaseTitle = "Current case · self-selected geometry";
+  saveAdaptiveProgress();
+  resetChallenge();
+  render();
 }
 
 function arrow(ctx, x1, y1, x2, y2, color, width = 2, head = 8) {
@@ -579,18 +752,23 @@ function render() {
   renderReadings(result);
   renderLesson(result);
   renderChips();
+  renderAdaptivePanel();
+  syncAdaptiveControls();
   draw();
   scheduleUiTypeset();
 }
 
 function selectSurface(surface) {
   if (state.surface === surface) return;
+  state.transferActive = false;
   state.surface = surface;
+  state.currentCaseTitle = "Current case · self-selected geometry";
   resetChallenge();
   render();
 }
 
 function selectMode(mode) {
+  if (mode !== "challenge") state.transferActive = false;
   state.mode = mode;
   resetChallenge();
   render();
@@ -611,11 +789,14 @@ function resetExperiment() {
     elements.curveWidth.value = values.width;
     state.side = values.side;
   }
+  state.transferActive = false;
+  state.currentCaseTitle = "Default case · live controls";
   resetChallenge();
   render();
 }
 
 function handleInput() {
+  state.currentCaseTitle = "Current case · self-selected geometry";
   resetChallenge();
   render();
 }
@@ -644,7 +825,27 @@ function answerDirection(prediction, answer) {
   return prediction < answer ? "low" : "high";
 }
 
+function recordMasteryEvidence(correctness) {
+  const progress = state.adaptiveProgress;
+  progress.totalAttempts += 1;
+  for (const [skill, correct] of Object.entries(correctness)) {
+    if (!correct || state.creditedSkills.includes(skill)) continue;
+    progress.mastery[state.surface][skill] = updateSkillMastery(
+      progress.mastery[state.surface][skill],
+      {
+        correct,
+        attempts: state.attempts,
+        hintsUsed: state.hintsUsed,
+        transfer: state.transferActive,
+      },
+    );
+    state.creditedSkills.push(skill);
+  }
+  saveAdaptiveProgress();
+}
+
 function checkPrediction() {
+  if (state.answerRevealed) return;
   const prediction = enteredNumber(elements.prediction);
   const cpPrediction = enteredNumber(elements.cpPrediction);
   const verticalCpPrediction = enteredNumber(elements.verticalCpPrediction);
@@ -666,13 +867,28 @@ function checkPrediction() {
   const horizontalCpCorrect = Math.abs(cpPrediction - answers.horizontalCp) / answers.horizontalCp <= 0.02;
   const verticalCpCorrect = !needsVerticalCp
     || Math.abs(verticalCpPrediction - answers.verticalCp) / answers.verticalCp <= 0.02;
+  recordMasteryEvidence(needsVerticalCp
+    ? { resultant: forceCorrect, horizontalCp: horizontalCpCorrect, verticalCp: verticalCpCorrect }
+    : { force: forceCorrect, cp: horizontalCpCorrect });
   if (forceCorrect && horizontalCpCorrect && verticalCpCorrect) {
+    const wasTransfer = state.transferActive;
     state.answerRevealed = true;
+    state.adaptiveProgress.completed[state.surface] += 1;
+    if (state.attempts === 1 && state.hintsUsed === 0) {
+      state.adaptiveProgress.independentSolves += 1;
+    }
+    if (wasTransfer) {
+      state.adaptiveProgress.transferPassed[state.surface] = true;
+      state.transferActive = false;
+    }
+    saveAdaptiveProgress();
     elements.challengeFeedback.textContent = needsVerticalCp
-      ? `Correct — ${fmt(answers.force)} kN, horizontal CP ${fmt(answers.horizontalCp)} m, and vertical CP ${fmt(answers.verticalCp)} m.`
-      : `Correct — ${fmt(answers.force)} kN and CP depth ${fmt(answers.horizontalCp)} m.`;
+      ? `Correct — ${fmt(answers.force)} kN, horizontal CP ${fmt(answers.horizontalCp)} m, and vertical CP ${fmt(answers.verticalCp)} m.${wasTransfer ? " Independent transfer passed." : ""}`
+      : `Correct — ${fmt(answers.force)} kN and CP depth ${fmt(answers.horizontalCp)} m.${wasTransfer ? " Independent transfer passed." : ""}`;
     elements.challengeFeedback.className = "challenge-feedback good";
     renderReadings(currentResult());
+    renderAdaptivePanel();
+    syncAdaptiveControls();
     return;
   }
   const corrections = [];
@@ -681,27 +897,45 @@ function checkPrediction() {
   if (!verticalCpCorrect) corrections.push(`vertical CP is ${answerDirection(verticalCpPrediction, answers.verticalCp)}`);
   elements.challengeFeedback.textContent = `Not yet — ${corrections.join("; ")}. Check the relevant line-of-action formula and units.`;
   elements.challengeFeedback.className = "challenge-feedback warn";
+  renderAdaptivePanel();
 }
 
 function showHint() {
+  if (state.transferActive) return;
   state.hintsUsed += 1;
+  state.adaptiveProgress.hints += 1;
+  const focus = state.adaptiveProgress.lastCoachFocus;
   if (state.surface === "plane") {
-    elements.challengeFeedback.textContent = `First use \\(F_R = \\rho g\\bar y A\\). Then locate the line of action with \\(y_{CP}=\\bar y+I_G\\sin^2\\theta/(\\bar yA)\\).`;
+    elements.challengeFeedback.textContent = focus === "force"
+      ? `Start with the requested force focus: \\(F_R = \\rho g\\bar y A\\). Then use \\(y_{CP}=\\bar y+I_G\\sin^2\\theta/(\\bar yA)\\) for the CP entry.`
+      : `Focus on the line of action: \\(y_{CP}=\\bar y+I_G\\sin^2\\theta/(\\bar yA)\\). The force entry still comes from \\(F_R = \\rho g\\bar y A\\).`;
   } else {
-    elements.challengeFeedback.textContent = `Combine \\(F_H\\) and \\(F_V\\) for the resultant. Use the projected plane-surface formula for \\(y_{H,CP}\\), and the imaginary-volume centroid \\(x_V=\\sum V_i x_i/\\sum V_i\\) for the vertical CP.`;
+    if (focus === "verticalCp") {
+      elements.challengeFeedback.textContent = `Use the chat-informed focus: the vertical CP is the centroid line \\(x_V=\\sum V_i x_i/\\sum V_i\\) of the complete imaginary-fluid volume.`;
+    } else if (focus === "horizontalCp") {
+      elements.challengeFeedback.textContent = `Use the chat-informed focus: treat the vertical projection as a plane surface and calculate \\(y_{H,CP}=\\bar y+I_G/(\\bar yA_v)\\).`;
+    } else {
+      elements.challengeFeedback.textContent = `Combine \\(F_H\\) and \\(F_V\\) for the resultant. Use the projected plane-surface formula for \\(y_{H,CP}\\), and \\(x_V=\\sum V_i x_i/\\sum V_i\\) for the vertical CP.`;
+    }
   }
   elements.challengeFeedback.className = "challenge-feedback warn";
+  saveAdaptiveProgress();
+  renderAdaptivePanel();
   typesetMath([elements.challengeFeedback]);
 }
 
 function revealAnswer() {
+  if (state.transferActive || state.answerRevealed) return;
   state.answerRevealed = true;
+  state.adaptiveProgress.reveals += 1;
   const answers = challengeAnswers();
   elements.challengeFeedback.textContent = state.surface === "plane"
     ? `Resultant: ${fmt(answers.force)} kN; CP depth: ${fmt(answers.horizontalCp)} m.`
     : `Resultant: ${fmt(answers.force)} kN; horizontal CP: ${fmt(answers.horizontalCp)} m; vertical CP: ${fmt(answers.verticalCp)} m from the left edge.`;
   elements.challengeFeedback.className = "challenge-feedback good";
+  saveAdaptiveProgress();
   renderReadings(currentResult());
+  renderAdaptivePanel();
 }
 
 function addCoachMessage(role, text, extraClass = "") {
@@ -716,7 +950,13 @@ function addCoachMessage(role, text, extraClass = "") {
 
 async function askCoach(question) {
   const cleanQuestion = String(question || "").trim();
-  if (!cleanQuestion) return;
+  if (!cleanQuestion || state.transferActive) return;
+  const focus = classifyCoachFocus(cleanQuestion, state.surface);
+  state.adaptiveProgress.coachTurns += 1;
+  state.adaptiveProgress.focusCounts[focus] += 1;
+  state.adaptiveProgress.lastCoachFocus = focus;
+  saveAdaptiveProgress();
+  renderAdaptivePanel();
   addCoachMessage("user", cleanQuestion);
   elements.coachQuestion.value = "";
   const pending = addCoachMessage("coach", "Thinking through the live geometry…", "pending");
@@ -734,6 +974,9 @@ async function askCoach(question) {
           surface: state.surface,
           mode: state.mode,
           answerRevealed: state.answerRevealed,
+          transferActive: state.transferActive,
+          coachFocus: focus,
+          mastery: state.adaptiveProgress.mastery[state.surface],
           inputs: currentInputs(),
         },
       }),
@@ -784,6 +1027,9 @@ for (const input of [
 elements.checkPrediction.addEventListener("click", checkPrediction);
 elements.hintButton.addEventListener("click", showHint);
 elements.revealButton.addEventListener("click", revealAnswer);
+elements.nextAdaptiveCase.addEventListener("click", loadRecommendedCase);
+elements.startTransferCheck.addEventListener("click", startTransferCheck);
+elements.resetAdaptiveProgress.addEventListener("click", resetAdaptiveLearning);
 elements.coachForm.addEventListener("submit", (event) => {
   event.preventDefault();
   askCoach(elements.coachQuestion.value);
