@@ -15,6 +15,7 @@ export function planeForces(input = {}) {
   const length = clamp(finite(input.length, 2), 0.1, 20);
   const width = clamp(finite(input.width, 2), 0.1, 20);
   const angle = clamp(finite(input.angle, 60), 1, 90);
+  const side = input.side === "lower" ? "lower" : "upper";
   const theta = angle * Math.PI / 180;
   const sinTheta = Math.sin(theta);
   const area = width * length;
@@ -33,6 +34,7 @@ export function planeForces(input = {}) {
     length,
     width,
     angle,
+    side,
     theta,
     sinTheta,
     area,
@@ -46,6 +48,8 @@ export function planeForces(input = {}) {
     bottomDepth,
     topPressureKPa: density * GRAVITY * topDepth / 1000,
     bottomPressureKPa: density * GRAVITY * bottomDepth / 1000,
+    horizontalDirection: side === "upper" ? "left" : "right",
+    verticalDirection: side === "upper" ? "downward" : "upward",
   };
 }
 
@@ -107,4 +111,3 @@ export function curvedForces(input = {}) {
     verticalDirection: side === "concave" ? "downward" : "upward",
   };
 }
-
