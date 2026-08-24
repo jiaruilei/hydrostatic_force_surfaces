@@ -217,8 +217,8 @@ function renderReadings(result) {
   ].join("");
 }
 
-function methodStep(index, title, copy, formula) {
-  return `<div class="method-step"><b>${index}</b><h4>${title}</h4><p>${copy}<span class="formula">${formula}</span></p></div>`;
+function methodStep(index, title, formula) {
+  return `<div class="method-step"><b>${index}</b><h4>${title}</h4><span class="formula">${formula}</span></div>`;
 }
 
 function equationCard(label, equation) {
@@ -253,9 +253,9 @@ function renderLesson(result) {
     elements.canvasTitle.textContent = "Inclined rectangular plate";
     elements.methodTitle.textContent = "Plane-surface workflow";
     elements.methodSteps.innerHTML = [
-      methodStep(1, "Locate the centroid", "Use vertical depth, even when the plate is inclined.", "\\(\\bar y = y_t + \\frac{L}{2}\\sin\\theta\\)"),
-      methodStep(2, "Integrate the pressure", "Average pressure at the centroid times the plate area gives the resultant.", "\\(F_R = \\rho g\\bar y A\\)"),
-      methodStep(3, "Place the resultant", "The pressure gradient moves the line of action below the centroid.", "\\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\)"),
+      methodStep(1, "Locate the centroid", "\\(\\bar y = y_t + \\frac{L}{2}\\sin\\theta\\)"),
+      methodStep(2, "Integrate the pressure", "\\(F_R = \\rho g\\bar y A\\)"),
+      methodStep(3, "Place the resultant", "\\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\)"),
     ].join("");
     elements.resultTitle.textContent = "From centroid depth to centre of pressure";
     elements.equationGrid.innerHTML = [
@@ -279,9 +279,9 @@ function renderLesson(result) {
   elements.canvasTitle.textContent = "Quarter-circle curved gate";
   elements.methodTitle.textContent = "Curved-surface workflow";
   elements.methodSteps.innerHTML = [
-    methodStep(1, "Project vertically", "The horizontal component equals the force on the vertical projection.", "\\(F_H = \\rho g\\bar y A_v\\)"),
-    methodStep(2, "Weigh imaginary fluid", "The vertical component is the fluid weight and acts through that volume's centre of mass.", "\\(F_V = \\rho gV\\)"),
-    methodStep(3, "Combine components", "The resultant passes through the intersection of the component lines of action.", "\\(F_R = \\sqrt{F_H^2 + F_V^2}\\)"),
+    methodStep(1, "Project vertically", "\\(F_H = \\rho g\\bar y A_v\\)"),
+    methodStep(2, "Weigh imaginary fluid", "\\(F_V = \\rho gV\\)"),
+    methodStep(3, "Combine components", "\\(F_R = \\sqrt{F_H^2 + F_V^2}\\)"),
   ].join("");
   elements.resultTitle.textContent = "Projection, imaginary volume, and resultant";
   elements.equationGrid.innerHTML = [
