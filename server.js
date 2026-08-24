@@ -188,6 +188,10 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/api/coach/status", (_req, res) => {
+  res.json({ apiConfigured: Boolean(process.env.OPENAI_API_KEY) });
+});
+
 app.post("/api/coach", coachRateLimit, async (req, res) => {
   const question = cleanText(req.body?.question, 1200);
   if (!question) return res.status(400).json({ error: "Please enter a question." });
@@ -196,7 +200,14 @@ app.post("/api/coach", coachRateLimit, async (req, res) => {
   const history = cleanHistory(req.body?.history);
   const apiKey = process.env.OPENAI_API_KEY;
   const guidedPrompt = GUIDED_COACH_PROMPTS.has(question.toLowerCase());
-  if (!apiKey || guidedPrompt) return res.json({ reply: ruleBasedReply(question, context), source: "built-in" });
+  if (!apiKey || guidedPrompt) {
+    return res.json({
+      reply: ruleBasedReply(question, context),
+      source: "built-in",
+      apiConfigured: Boolean(apiKey),
+      guided: guidedPrompt,
+    });
+  }
 
   try {
     const response = await fetch("https://api.openai.com/v1/responses", {
@@ -218,10 +229,15 @@ app.post("/api/coach", coachRateLimit, async (req, res) => {
     if (!response.ok) throw new Error(`OpenAI API returned ${response.status}`);
     const reply = outputText(await response.json());
     if (!reply) throw new Error("The AI coach returned an empty response.");
-    return res.json({ reply, source: "openai" });
+    return res.json({ reply, source: "openai", apiConfigured: true });
   } catch (error) {
     console.error("Coach request failed:", error.message);
-    return res.json({ reply: ruleBasedReply(question, context), source: "built-in" });
+    return res.json({
+      reply: ruleBasedReply(question, context),
+      source: "built-in",
+      apiConfigured: true,
+      fallback: true,
+    });
   }
 });
 
