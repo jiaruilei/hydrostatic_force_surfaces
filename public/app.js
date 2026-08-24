@@ -139,6 +139,7 @@ function readingCard(label, value, note, hidden = false) {
 
 function renderReadings(result) {
   const challengeHidden = state.mode === "challenge" && !state.answerRevealed;
+  elements.readingBar.classList.toggle("five-readings", state.surface === "curved");
   if (state.surface === "plane") {
     elements.readingBar.innerHTML = [
       readingCard("Centroid depth", `${fmt(result.centroidDepth)} m`, "below free surface"),
@@ -153,6 +154,7 @@ function renderReadings(result) {
     readingCard("Vertical", `${fmt(result.verticalKN)} kN`, result.verticalDirection),
     readingCard("Resultant", `${fmt(result.resultantKN)} kN`, `${fmt(result.resultantAngle, 1)}° to horizontal`, challengeHidden),
     readingCard("Horizontal CP", `${fmt(result.horizontalCenterDepth)} m`, "below free surface"),
+    readingCard("Vertical CP", `${fmt(result.verticalCenterX)} m`, "CM line from left edge"),
   ].join("");
 }
 
@@ -215,13 +217,13 @@ function renderLesson(result) {
   elements.methodTitle.textContent = "Curved-surface workflow";
   elements.methodSteps.innerHTML = [
     methodStep(1, "Project vertically", "The horizontal component equals the force on the vertical projection.", "\\(F_H = \\rho g\\bar y A_v\\)"),
-    methodStep(2, "Weigh imaginary fluid", "The vertical component is the weight of fluid above the curve.", "\\(F_V = \\rho gV\\)"),
+    methodStep(2, "Weigh imaginary fluid", "The vertical component is the fluid weight and acts through that volume's centre of mass.", "\\(F_V = \\rho gV\\)"),
     methodStep(3, "Combine components", "The resultant passes through the intersection of the component lines of action.", "\\(F_R = \\sqrt{F_H^2 + F_V^2}\\)"),
   ].join("");
   elements.resultTitle.textContent = "Projection, imaginary volume, and resultant";
   elements.equationGrid.innerHTML = [
     equationCard("1 · Horizontal", `\\(A_v = bR = ${fmt(result.projectedArea)}\\;\\mathrm{m^2}\\)<br>\\(F_H = \\rho g\\bar y A_v = \\mathbf{${fmt(result.horizontalKN)}\\;\\mathrm{kN}}\\)`),
-    equationCard("2 · Vertical", `\\(V = bdR + \\frac{1}{4}\\pi bR^2 = ${fmt(result.imaginaryVolume)}\\;\\mathrm{m^3}\\)<br>\\(F_V = \\rho gV = \\mathbf{${fmt(result.verticalKN)}\\;\\mathrm{kN}}\\)`),
+    equationCard("2 · Vertical", `\\(V = bdR + \\frac{1}{4}\\pi bR^2 = ${fmt(result.imaginaryVolume)}\\;\\mathrm{m^3}\\)<br>\\(F_V = \\rho gV = \\mathbf{${fmt(result.verticalKN)}\\;\\mathrm{kN}}\\)<br>\\(x_V = \\frac{V_r(R/2)+V_q(4R/3\\pi)}{V} = \\mathbf{${fmt(result.verticalCenterX)}\\;\\mathrm{m}}\\)`),
     equationCard("3 · Resultant", `\\(F_R = \\sqrt{${fmt(result.horizontalKN)}^2 + ${fmt(result.verticalKN)}^2}\\)<br>\\(F_R = \\mathbf{${fmt(result.resultantKN)}\\;\\mathrm{kN}},\\quad \\theta_R = ${fmt(result.resultantAngle, 1)}^\\circ\\)`),
   ].join("");
   elements.challengeTitle.textContent = "Predict the curved-surface resultant";
@@ -263,26 +265,58 @@ function arrow(ctx, x1, y1, x2, y2, color, width = 2, head = 8) {
   ctx.restore();
 }
 
-function label(ctx, text, x, y, color = "#34445a", align = "left", weight = 700) {
+function boxedLabel(ctx, text, x, y, color = "#34445a", align = "left", weight = 700) {
+  const paddingX = 5;
+  const paddingY = 3;
+  const canvasWidth = ctx.canvas.getBoundingClientRect().width;
+  const canvasHeight = ctx.canvas.getBoundingClientRect().height;
   ctx.save();
-  ctx.fillStyle = color;
   ctx.font = `${weight} 12px ui-sans-serif, system-ui, sans-serif`;
+  const textWidth = ctx.measureText(text).width;
+  const boxWidth = textWidth + paddingX * 2;
+  const boxHeight = 18;
+  let left = x;
+  if (align === "center") left -= boxWidth / 2;
+  if (align === "right") left -= boxWidth;
+  left = Math.min(canvasWidth - boxWidth - 5, Math.max(5, left));
+  const top = Math.min(canvasHeight - boxHeight - 5, Math.max(5, y - 14 - paddingY));
+  ctx.fillStyle = "rgba(255,255,255,.9)";
+  ctx.strokeStyle = "rgba(203,213,225,.9)";
+  ctx.lineWidth = 1;
+  ctx.fillRect(left, top, boxWidth, boxHeight);
+  ctx.strokeRect(left, top, boxWidth, boxHeight);
+  ctx.fillStyle = color;
   ctx.textAlign = align;
-  ctx.fillText(text, x, y);
+  const textX = align === "center"
+    ? left + boxWidth / 2
+    : align === "right" ? left + boxWidth - paddingX : left + paddingX;
+  ctx.fillText(text, textX, top + boxHeight - paddingY - 1);
   ctx.restore();
 }
 
-function dot(ctx, x, y, color, name, dx = 9, dy = -8) {
+function marker(ctx, x, y, color, radius = 5) {
   ctx.save();
   ctx.fillStyle = "#fff";
   ctx.strokeStyle = color;
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(x, y, 5, 0, Math.PI * 2);
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  label(ctx, name, x + dx, y + dy, color);
   ctx.restore();
+}
+
+function calloutMarker(ctx, x, y, color, text, labelX, labelY, align = "left") {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(labelX, labelY - 5);
+  ctx.stroke();
+  ctx.restore();
+  marker(ctx, x, y, color);
+  boxedLabel(ctx, text, labelX, labelY, color, align, 800);
 }
 
 function prepareCanvas() {
@@ -323,7 +357,7 @@ function drawTank(ctx, width, height, waterLine = 56) {
   ctx.moveTo(34, waterLine);
   ctx.lineTo(width - 34, waterLine);
   ctx.stroke();
-  label(ctx, "free surface", 43, waterLine - 9, "#2563eb");
+  boxedLabel(ctx, "free surface", 43, waterLine - 9, "#2563eb");
 }
 
 function drawPlane(result) {
@@ -352,7 +386,9 @@ function drawPlane(result) {
   ctx.lineTo(x1, y1);
   ctx.stroke();
   ctx.restore();
-  label(ctx, `yₜ = ${fmt(result.topDepth, 1)} m`, x1 - 8, (waterLine + y1) / 2, "#51657d", "right");
+  if (result.topDepth >= 0.15) {
+    boxedLabel(ctx, `yₜ = ${fmt(result.topDepth, 1)} m`, x1 - 8, (waterLine + y1) / 2, "#51657d", "right");
+  }
 
   ctx.save();
   ctx.strokeStyle = "#0b1930";
@@ -385,10 +421,10 @@ function drawPlane(result) {
   const cy = y1 + (y2 - y1) * centroidT;
   const cpx = x1 + (x2 - x1) * cpT;
   const cpy = y1 + (y2 - y1) * cpT;
-  dot(ctx, cx, cy, "#2563eb", "C");
-  dot(ctx, cpx, cpy, "#ef4444", "CP", 10, 17);
+  calloutMarker(ctx, cx, cy, "#2563eb", "Centroid", cx - nx * 31, cy - ny * 31 - 18);
+  calloutMarker(ctx, cpx, cpy, "#ef4444", "Centre of pressure", cpx - nx * 31, cpy - ny * 31 + 22);
   arrow(ctx, cpx, cpy, cpx + nx * 76, cpy + ny * 76, "#ef4444", 3, 10);
-  label(ctx, `Fᵣ ${fmt(result.forceKN)} kN`, cpx + nx * 84, cpy + ny * 84, "#b91c1c", nx < 0 ? "right" : "left", 800);
+  boxedLabel(ctx, `Fᵣ ${fmt(result.forceKN)} kN`, cpx + nx * 85, cpy + ny * 85, "#b91c1c", nx < 0 ? "right" : "left", 800);
 
   const angleRadius = 36;
   ctx.save();
@@ -402,9 +438,7 @@ function drawPlane(result) {
   ctx.arc(x1, y1, angleRadius, 0, result.theta);
   ctx.stroke();
   ctx.restore();
-  label(ctx, `${fmt(result.angle, 0)}°`, x1 + 40, y1 + 24, "#52667e");
-  label(ctx, `L = ${fmt(result.length, 1)} m`, (x1 + x2) / 2 + ty * 24, (y1 + y2) / 2 - tx * 24, "#0b1930", "center");
-  label(ctx, "Pressure arrows grow with vertical depth", width - 46, height - 46, "#557086", "right", 600);
+  boxedLabel(ctx, `${fmt(result.angle, 0)}°`, x1 + 42, y1 + 24, "#52667e");
 }
 
 function drawCurved(result) {
@@ -435,7 +469,7 @@ function drawCurved(result) {
   ctx.fill();
   ctx.stroke();
   ctx.restore();
-  label(ctx, "imaginary fluid volume", centerX + radiusPx / 2, waterLine + 19, "#9a5b05", "center");
+  boxedLabel(ctx, "imaginary fluid volume", centerX + radiusPx / 2, waterLine + 21, "#9a5b05", "center");
 
   ctx.save();
   ctx.strokeStyle = "rgba(71,85,105,.6)";
@@ -446,7 +480,7 @@ function drawCurved(result) {
   ctx.lineTo(centerX + radiusPx, centerY + radiusPx);
   ctx.stroke();
   ctx.restore();
-  label(ctx, "vertical projection", centerX + radiusPx + 10, centerY + radiusPx / 2, "#52667e");
+  boxedLabel(ctx, "vertical projection", centerX + radiusPx + 10, centerY + radiusPx / 2, "#52667e");
 
   ctx.save();
   ctx.strokeStyle = "#0b1930";
@@ -467,13 +501,14 @@ function drawCurved(result) {
     arrow(ctx, px - dx * 5, py - dy * 5, px + dx * 25, py + dy * 25, "#1597cf", 1.8, 6);
   }
 
-  const ix = centerX + result.verticalLineX * scale;
+  const ix = centerX + result.verticalCenterX * scale;
   const iy = waterLine + result.horizontalCenterDepth * scale;
+  const centerMassY = waterLine + result.verticalCenterDepth * scale;
   ctx.save();
   ctx.strokeStyle = "rgba(245,158,11,.8)";
   ctx.setLineDash([5, 4]);
   ctx.beginPath();
-  ctx.moveTo(ix, waterLine);
+  ctx.moveTo(ix, waterLine + 24);
   ctx.lineTo(ix, Math.min(height - 42, centerY + radiusPx));
   ctx.moveTo(centerX - 28, iy);
   ctx.lineTo(Math.min(width - 42, centerX + radiusPx + 120), iy);
@@ -482,15 +517,26 @@ function drawCurved(result) {
 
   const hDirection = result.side === "concave" ? 1 : -1;
   const vDirection = result.side === "concave" ? 1 : -1;
-  arrow(ctx, ix, iy, ix + hDirection * 82, iy, "#2563eb", 3, 10);
-  arrow(ctx, ix, iy, ix, iy + vDirection * 82, "#f59e0b", 3, 10);
-  arrow(ctx, ix, iy, ix + hDirection * 70, iy + vDirection * 70, "#ef4444", 3, 10);
-  label(ctx, `Fᴴ ${fmt(result.horizontalKN)} kN`, ix + hDirection * 90, iy - 8, "#1d4ed8", hDirection > 0 ? "left" : "right", 800);
-  label(ctx, `Fⱽ ${fmt(result.verticalKN)} kN`, ix + 10, iy + vDirection * 91, "#b56805", "left", 800);
-  label(ctx, `Fᵣ ${fmt(result.resultantKN)} kN`, ix + hDirection * 78, iy + vDirection * 78, "#b91c1c", hDirection > 0 ? "left" : "right", 800);
-  dot(ctx, ix, iy, "#ef4444", "lines of action", 10, -10);
-  label(ctx, `R = ${fmt(result.radius, 1)} m`, centerX + radiusPx * .62, centerY + radiusPx * .52, "#0b1930", "center");
-  label(ctx, `d = ${fmt(result.topDepth, 1)} m`, centerX - 10, (waterLine + centerY) / 2, "#52667e", "right");
+  arrow(ctx, ix, iy, ix + hDirection * 78, iy, "#2563eb", 3, 10);
+  arrow(ctx, ix, iy, ix, iy + vDirection * 78, "#f59e0b", 3, 10);
+  arrow(ctx, ix, iy, ix + hDirection * 62, iy + vDirection * 62, "#ef4444", 3, 10);
+  boxedLabel(ctx, "Fᴴ", ix + hDirection * 86, iy - 12, "#1d4ed8", hDirection > 0 ? "left" : "right", 800);
+  boxedLabel(ctx, "Fⱽ", ix + 12, iy + vDirection * 88, "#b56805", "left", 800);
+  boxedLabel(ctx, "Fᵣ", ix + hDirection * 69, iy + vDirection * 57, "#b91c1c", hDirection > 0 ? "left" : "right", 800);
+  marker(ctx, ix, iy, "#ef4444", 4);
+  calloutMarker(
+    ctx,
+    ix,
+    centerMassY,
+    "#b56805",
+    "CM (vertical CP)",
+    ix - 18,
+    centerMassY - 12,
+    "right",
+  );
+  if (result.topDepth >= 0.15) {
+    boxedLabel(ctx, `d = ${fmt(result.topDepth, 1)} m`, centerX - 10, (waterLine + centerY) / 2, "#52667e", "right");
+  }
 }
 
 function draw() {
