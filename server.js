@@ -19,6 +19,7 @@ const GUIDED_COACH_PROMPTS = new Set([
   "give me a hint",
   "why does angle matter?",
   "explain the centre of pressure",
+  "which way does the force act?",
   "explain the vertical projection",
   "which way do the components act?",
 ]);
@@ -82,6 +83,10 @@ function ruleBasedReply(question, context) {
   const r = context.result;
 
   if (context.surface === "plane") {
+    if (q.includes("side") || q.includes("direction") || q.includes("which way")) {
+      const verticalDirection = r.angle >= 89.95 ? "" : ` and ${r.verticalDirection}`;
+      return `For loading on the selected ${r.side} side, the resultant acts ${r.horizontalDirection}${verticalDirection}, normal to the plate. Switching to the other side reverses the force direction but does not change its magnitude or centre-of-pressure location.`;
+    }
     if (q.includes("center") || q.includes("cp") || q.includes("pressure")) {
       if (context.mode === "challenge" && !context.answerRevealed) {
         return "Use the line-of-action equation \\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\). Keep vertical depth distinct from distance measured along the inclined plate; I will leave the numerical CP for you to calculate.";
@@ -129,6 +134,7 @@ function coachInstructions() {
     "You are Prof. Gary's AI Proxy for a CE2134 hydrostatics learning platform.",
     "Teach forces on inclined plane surfaces and quarter-circle curved surfaces.",
     "For plane surfaces, use F_R = rho g y_bar A and y_CP = y_bar + I_G sin^2(theta)/(y_bar A).",
+    "For a plane surface, the force acts normal to and away from the selected loaded side; changing sides reverses direction without changing magnitude or center of pressure.",
     "For curved surfaces, teach F_H as the force on the vertical projection and F_V as the weight of the imaginary fluid above the curve.",
     "For the vertical component, always use F_V = rho g V_imaginary; never substitute an imaginary area for the fluid volume.",
     "Use the server-verified live state. Do not invent geometry or measurements.",
@@ -151,6 +157,8 @@ function formatContext(context) {
       `Plate length: ${r.length} m`,
       `Plate width: ${r.width} m`,
       `Inclination from horizontal: ${r.angle} degrees`,
+      `Loaded side: ${r.side}`,
+      `Force direction: ${r.horizontalDirection} and ${r.verticalDirection}, normal to the plate`,
       `Area: ${r.area} m^2`,
       `Centroid depth: ${r.centroidDepth} m`,
       `Resultant force: ${r.forceKN} kN`,
@@ -248,4 +256,3 @@ app.get("*", (_req, res) => {
 app.listen(port, () => {
   console.log(`Hydrostatic force lab listening on http://localhost:${port}`);
 });
-
