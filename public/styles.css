@@ -172,8 +172,11 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
 .equation-card strong { color:var(--blue-dark); }
 .method-step mjx-container,.equation-card mjx-container { margin:.06em 0 !important; line-height:1.1; }
 .challenge-prompt { margin:0 0 10px; color:var(--muted); font-size:13px; }
-.challenge-form { display:grid; grid-template-columns:minmax(180px,240px) auto auto auto; align-items:end; gap:9px; }
+.challenge-form { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:12px; }
 .challenge-form label { margin:0; }
+.challenge-inputs { display:grid; grid-template-columns:repeat(2,minmax(140px,1fr)); gap:9px; }
+.challenge-inputs.curved-inputs { grid-template-columns:repeat(3,minmax(130px,1fr)); }
+.challenge-actions { display:flex; align-items:center; gap:9px; }
 .input-with-unit { display:grid; grid-template-columns:1fr auto; align-items:center; margin-top:5px; border:1px solid #cbd6e4; border-radius:9px; background:#fff; }
 .input-with-unit:focus-within { outline:3px solid rgba(37,99,235,.22); outline-offset:1px; }
 .input-with-unit input { border:0; outline:0; }
@@ -225,8 +228,8 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
   .reading-bar.five-readings { grid-template-columns:1fr 1fr; }
   .equation-grid,.method-steps { grid-template-columns:1fr; }
   .coach-layout { grid-template-columns:1fr; }
-  .challenge-form { grid-template-columns:1fr 1fr; }
-  .challenge-form label { grid-column:1 / -1; }
+  .challenge-form { grid-template-columns:1fr; }
+  .challenge-actions { justify-content:flex-start; }
   .canvas-wrap { height:390px; }
 }
 @media (max-width:470px) {
@@ -237,7 +240,8 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
   .card-heading { flex-direction:column; }
   .legend { justify-content:flex-start; }
   .canvas-wrap { height:350px; }
-  .challenge-form { grid-template-columns:1fr; }
-  .challenge-form label { grid-column:auto; }
+  .challenge-inputs,.challenge-inputs.curved-inputs { grid-template-columns:1fr; }
+  .challenge-actions { align-items:stretch; flex-direction:column; }
+  .challenge-actions button { width:100%; }
 }
 
