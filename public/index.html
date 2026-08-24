@@ -208,15 +208,31 @@
           </div>
           <p class="challenge-prompt" id="challengePrompt"></p>
           <div class="challenge-form">
-            <label for="prediction">Your prediction
-              <span class="input-with-unit">
-                <input id="prediction" type="number" step="0.01" inputmode="decimal" />
-                <span>kN</span>
-              </span>
-            </label>
-            <button type="button" class="primary-button" id="checkPrediction">Check</button>
-            <button type="button" class="secondary-button" id="hintButton">Hint</button>
-            <button type="button" class="text-button" id="revealButton">Reveal</button>
+            <div class="challenge-inputs" id="challengeInputs">
+              <label for="prediction"><span id="forcePredictionLabel">Resultant force</span>
+                <span class="input-with-unit">
+                  <input id="prediction" type="number" step="0.01" inputmode="decimal" />
+                  <span>kN</span>
+                </span>
+              </label>
+              <label for="cpPrediction"><span id="cpPredictionLabel">CP depth</span>
+                <span class="input-with-unit">
+                  <input id="cpPrediction" type="number" step="0.01" inputmode="decimal" />
+                  <span>m</span>
+                </span>
+              </label>
+              <label for="verticalCpPrediction" id="verticalCpGroup" hidden><span>Vertical CP</span>
+                <span class="input-with-unit">
+                  <input id="verticalCpPrediction" type="number" step="0.01" inputmode="decimal" />
+                  <span>m</span>
+                </span>
+              </label>
+            </div>
+            <div class="challenge-actions">
+              <button type="button" class="primary-button" id="checkPrediction">Check</button>
+              <button type="button" class="secondary-button" id="hintButton">Hint</button>
+              <button type="button" class="text-button" id="revealButton">Reveal</button>
+            </div>
           </div>
           <p class="challenge-feedback" id="challengeFeedback">Work through the lecture method before checking.</p>
         </article>
