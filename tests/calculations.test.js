@@ -45,3 +45,18 @@ test("force magnitude scales linearly with density and width", () => {
   close(scaled.forceN / base.forceN, 6);
 });
 
+test("plane loaded side reverses direction without changing force or CP", () => {
+  const upper = planeForces({ angle: 60, side: "upper" });
+  const lower = planeForces({ angle: 60, side: "lower" });
+
+  close(lower.forceN, upper.forceN);
+  close(lower.centerPressureDepth, upper.centerPressureDepth);
+  assert.deepEqual(
+    [upper.horizontalDirection, upper.verticalDirection],
+    ["left", "downward"],
+  );
+  assert.deepEqual(
+    [lower.horizontalDirection, lower.verticalDirection],
+    ["right", "upward"],
+  );
+});
