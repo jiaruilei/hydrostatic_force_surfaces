@@ -66,10 +66,16 @@ export function curvedForces(input = {}) {
   const imaginaryVolume = rectangularVolume + quarterCircleVolume;
   const verticalN = density * GRAVITY * imaginaryVolume;
   const rectangleCentroidX = radius / 2;
+  const rectangleCentroidDepth = topDepth / 2;
   const quarterCircleCentroidX = 4 * radius / (3 * Math.PI);
-  const verticalLineX = (
+  const quarterCircleCentroidDepth = topDepth + 4 * radius / (3 * Math.PI);
+  const verticalCenterX = (
     rectangularVolume * rectangleCentroidX
     + quarterCircleVolume * quarterCircleCentroidX
+  ) / imaginaryVolume;
+  const verticalCenterDepth = (
+    rectangularVolume * rectangleCentroidDepth
+    + quarterCircleVolume * quarterCircleCentroidDepth
   ) / imaginaryVolume;
   const resultantN = Math.hypot(horizontalN, verticalN);
   const resultantAngle = Math.atan2(verticalN, horizontalN) * 180 / Math.PI;
@@ -91,7 +97,9 @@ export function curvedForces(input = {}) {
     imaginaryVolume,
     verticalN,
     verticalKN: verticalN / 1000,
-    verticalLineX,
+    verticalCenterX,
+    verticalCenterDepth,
+    verticalLineX: verticalCenterX,
     resultantN,
     resultantKN: resultantN / 1000,
     resultantAngle,
