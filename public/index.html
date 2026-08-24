@@ -4,10 +4,34 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Explore hydrostatic forces on plane and curved surfaces with live CE2134 visualisations." />
-  <meta property="og:title" content="Hydrostatic Force Lab" />
+  <meta property="og:title" content="Hydrostatic Forces (Week 3)" />
   <meta property="og:description" content="An interactive CE2134 lab for plane and curved hydrostatic surfaces." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/jiaruilei/hydrostatic_force_surfaces/main/public/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Hydrostatic Forces (Week 3)" />
+  <meta name="twitter:description" content="An interactive CE2134 lab for plane and curved hydrostatic surfaces." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/jiaruilei/hydrostatic_force_surfaces/main/public/og.png" />
   <meta name="theme-color" content="#2563eb" />
-  <title>Hydrostatic Force Lab · CE2134</title>
+  <title>Hydrostatic Forces (Week 3) · CE2134</title>
+  <script>
+    window.mathJaxReady = new Promise((resolve) => { window.resolveMathJaxReady = resolve; });
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]],
+        processEscapes: true,
+      },
+      chtml: { displayAlign: "left", displayIndent: "0" },
+      startup: {
+        pageReady() {
+          return MathJax.startup.defaultPageReady().then(() => {
+            window.resolveMathJaxReady();
+          });
+        },
+      },
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -15,7 +39,7 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">CE2134 · Fluid Mechanics</p>
-        <h1>Hydrostatic Force Lab</h1>
+        <h1>Hydrostatic Forces (Week 3)</h1>
       </div>
       <div class="top-actions">
         <div class="surface-switch" role="tablist" aria-label="Surface type">
@@ -160,10 +184,6 @@
               </div>
             </div>
             <div class="method-steps" id="methodSteps"></div>
-            <div class="insight-box">
-              <span>Notice</span>
-              <p id="insightText"></p>
-            </div>
           </article>
         </div>
 
