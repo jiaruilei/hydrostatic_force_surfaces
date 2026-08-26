@@ -20,10 +20,28 @@ test("plane-surface lecture example", () => {
     angle: 90,
   });
 
-  close(result.centroidDepth, 4);
+  close(result.centroidPosition, 4);
+  close(result.centroidWaterDepth, 4);
   close(result.forceKN, 156.8);
-  close(result.centerPressureDepth, 4.083333333333333);
+  close(result.centerPressurePosition, 4.083333333333333);
+  close(result.centerPressureWaterDepth, 4.083333333333333);
   close(result.centroidToPressure, 0.08333333333333326);
+});
+
+test("inclined plane distinguishes along-plate y from vertical water depth h", () => {
+  const result = planeForces({
+    density: 1000,
+    topDepth: 1,
+    length: 2,
+    width: 2,
+    angle: 30,
+  });
+
+  close(result.topPositionAlongPlane, 2);
+  close(result.centroidPosition, 3);
+  close(result.centroidWaterDepth, 1.5);
+  close(result.centerPressurePosition, 3.111111111111111);
+  close(result.centerPressureWaterDepth, 1.5555555555555554);
 });
 
 test("quarter-circle curved-surface lecture example", () => {
@@ -56,7 +74,7 @@ test("plane loaded side reverses direction without changing force or CP", () => 
   const lower = planeForces({ angle: 60, side: "lower" });
 
   close(lower.forceN, upper.forceN);
-  close(lower.centerPressureDepth, upper.centerPressureDepth);
+  close(lower.centerPressurePosition, upper.centerPressurePosition);
   assert.deepEqual(
     [upper.horizontalDirection, upper.verticalDirection],
     ["left", "downward"],

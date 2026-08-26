@@ -89,20 +89,20 @@ function ruleBasedReply(question, context) {
     }
     if (q.includes("center") || q.includes("cp") || q.includes("pressure")) {
       if (context.mode === "challenge" && !context.answerRevealed) {
-        return "Use the line-of-action equation \\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\). Keep vertical depth distinct from distance measured along the inclined plate; I will leave the numerical CP for you to calculate.";
+        return "Measure \\(y\\) along the plate and \\(h\\) vertically. Use \\(y_{CP}=\\bar y+\\frac{I_G}{\\bar yA}\\), where \\(\\bar y=h_t/\\sin\\theta+L/2\\). I will leave the numerical CP for you to calculate.";
       }
-      return `Pressure increases linearly with vertical depth, so the center of pressure lies below the centroid. Here, \\(\\bar y = ${readable(r.centroidDepth)}\\;\\mathrm{m}\\) and \\(y_{CP} = ${readable(r.centerPressureDepth)}\\;\\mathrm{m}\\). Use \\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\).`;
+      return `The coordinate \\(y\\) follows the plate, while water depth is \\(h=y\\sin\\theta\\). Here, \\(\\bar y=${readable(r.centroidPosition)}\\;\\mathrm{m}\\), \\(\\bar h=${readable(r.centroidWaterDepth)}\\;\\mathrm{m}\\), and \\(y_{CP}=${readable(r.centerPressurePosition)}\\;\\mathrm{m}\\). Use \\(y_{CP}=\\bar y+\\frac{I_G}{\\bar yA}\\).`;
     }
     if (q.includes("angle") || q.includes("incline")) {
-      return "The angle changes vertical depth through \\(L\\sin\\theta\\). The area remains \\(A=bL\\), but both the centroid depth and the center-of-pressure correction depend on the inclination.";
+      return "The angle converts distance along the plate to vertical water depth through \\(h=y\\sin\\theta\\). The area remains \\(A=bL\\); use \\(\\bar h=\\bar y\\sin\\theta\\) when calculating the force.";
     }
     if (q.includes("hint") || q.includes("start")) {
-      return "First find the centroid's vertical depth: \\(\\bar y = y_t + \\frac{L}{2}\\sin\\theta\\). Then use \\(F_R = \\rho g\\bar y A\\). Find the center of pressure only after the force magnitude.";
+      return "First find the along-plate coordinates \\(y_t=h_t/\\sin\\theta\\) and \\(\\bar y=y_t+L/2\\). Convert to water depth with \\(\\bar h=\\bar y\\sin\\theta\\), then use \\(F_R=\\rho g\\bar hA\\).";
     }
     if (context.mode === "challenge" && !context.answerRevealed) {
-      return "Build the answer from centroid depth and area. I will keep the final force hidden while the challenge is active.";
+      return "Build the answer from centroid water depth and area. I will keep the final force hidden while the challenge is active.";
     }
-    return `For this plate, \\(A = ${readable(r.area)}\\;\\mathrm{m^2}\\) and \\(\\bar y = ${readable(r.centroidDepth)}\\;\\mathrm{m}\\), giving \\(F_R = ${readable(r.forceKN)}\\;\\mathrm{kN}\\). Its line of action is at \\(y_{CP} = ${readable(r.centerPressureDepth)}\\;\\mathrm{m}\\) below the free surface.`;
+    return `For this plate, \\(\\bar y=${readable(r.centroidPosition)}\\;\\mathrm{m}\\) along the surface and \\(\\bar h=${readable(r.centroidWaterDepth)}\\;\\mathrm{m}\\) vertically. Thus \\(F_R=${readable(r.forceKN)}\\;\\mathrm{kN}\\), with \\(y_{CP}=${readable(r.centerPressurePosition)}\\;\\mathrm{m}\\) along the plate from the free-surface origin.`;
   }
 
   if (q.includes("horizontal") || q.includes("projection")) {
@@ -134,14 +134,14 @@ function coachInstructions() {
     "You are Prof. Gary's AI Proxy for a CE2134 hydrostatics learning platform.",
     "Teach forces on inclined plane surfaces and quarter-circle curved surfaces.",
     "Use exactly g = 9.8 N/kg in every calculation.",
-    "For plane surfaces, use F_R = rho g y_bar A and y_CP = y_bar + I_G sin^2(theta)/(y_bar A).",
+    "For plane surfaces, y is measured along the plate and h is vertical water depth. Use h = y sin(theta), F_R = rho g h_bar A, and y_CP = y_bar + I_G/(y_bar A).",
     "For a plane surface, the force acts normal to and away from the selected loaded side; changing sides reverses direction without changing magnitude or center of pressure.",
     "For curved surfaces, teach F_H as the force on the vertical projection and F_V as the weight of the imaginary fluid above the curve.",
     "For the vertical component, always use F_V = rho g V_imaginary; never substitute an imaginary area for the fluid volume.",
     "Use the server-verified live state. Do not invent geometry or measurements.",
     "In Challenge mode, if the answer is not revealed, scaffold without stating the final resultant force or center-of-pressure values.",
     "Format every mathematical expression as TeX using \\( ... \\) for inline math or \\[ ... \\] for display math; do not use dollar-sign delimiters.",
-    "Use TeX commands such as \\rho, \\bar y, subscripts, fractions, and \\mathrm{} for units. Keep ordinary prose outside math delimiters.",
+    "Use TeX commands such as \\rho, \\bar y, \\bar h, subscripts, fractions, and \\mathrm{} for units. Keep ordinary prose outside math delimiters.",
     "Keep replies classroom-friendly, accurate, and under 140 words. Avoid markdown tables and unnecessary blank lines between equations. Always finish with a complete sentence.",
   ].join("\n");
 }
@@ -155,16 +155,19 @@ function formatContext(context) {
       `Answer revealed: ${context.answerRevealed}`,
       `Density: ${r.density} kg/m^3`,
       `Gravitational acceleration: ${GRAVITY} N/kg`,
-      `Top-edge depth: ${r.topDepth} m`,
+      `Top-edge water depth h_t: ${r.topDepth} m`,
       `Plate length: ${r.length} m`,
       `Plate width: ${r.width} m`,
       `Inclination from horizontal: ${r.angle} degrees`,
       `Loaded side: ${r.side}`,
       `Force direction: ${r.horizontalDirection} and ${r.verticalDirection}, normal to the plate`,
       `Area: ${r.area} m^2`,
-      `Centroid depth: ${r.centroidDepth} m`,
+      `Top-edge position along plate y_t: ${r.topPositionAlongPlane} m`,
+      `Centroid position along plate y_bar: ${r.centroidPosition} m`,
+      `Centroid water depth h_bar: ${r.centroidWaterDepth} m`,
       `Resultant force: ${r.forceKN} kN`,
-      `Center-of-pressure depth: ${r.centerPressureDepth} m`,
+      `Center-of-pressure position along plate y_CP: ${r.centerPressurePosition} m`,
+      `Center-of-pressure water depth h_CP: ${r.centerPressureWaterDepth} m`,
     ].join("\n");
   }
   return [

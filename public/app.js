@@ -201,9 +201,9 @@ function renderReadings(result) {
   elements.readingBar.classList.toggle("five-readings", state.surface === "curved");
   if (state.surface === "plane") {
     elements.readingBar.innerHTML = [
-      readingCard("Centroid depth", `${fmt(result.centroidDepth)} m`, "below free surface"),
+      readingCard("Centroid water depth", `${fmt(result.centroidWaterDepth)} m`, "h̄, measured vertically"),
       readingCard("Resultant force", `${fmt(result.forceKN)} kN`, "normal to the plate", challengeHidden),
-      readingCard("CP depth", `${fmt(result.centerPressureDepth)} m`, "below free surface"),
+      readingCard("CP position", `${fmt(result.centerPressurePosition)} m`, "along plate from the free surface"),
       readingCard("Bottom pressure", `${fmt(result.bottomPressureKPa)} kPa`, "gage pressure"),
     ].join("");
     return;
@@ -249,24 +249,24 @@ function renderLesson(result) {
   if (state.surface === "plane") {
     elements.lessonKicker.textContent = "Plane surface";
     elements.lessonTitle.textContent = "Follow the pressure to its single resultant";
-    elements.lessonSummary.textContent = "Change the plate geometry and watch the centroid, pressure distribution, resultant force, and centre of pressure move together.";
+    elements.lessonSummary.textContent = "Measure y along the plate and h vertically below the free surface, then follow the pressure to the resultant and centre of pressure.";
     elements.canvasTitle.textContent = "Inclined rectangular plate";
     elements.methodTitle.textContent = "Plane-surface workflow";
     elements.methodSteps.innerHTML = [
-      methodStep(1, "Locate the centroid", "\\(\\bar y = y_t + \\frac{L}{2}\\sin\\theta\\)"),
-      methodStep(2, "Integrate the pressure", "\\(F_R = \\rho g\\bar y A\\)"),
-      methodStep(3, "Place the resultant", "\\(y_{CP} = \\bar y + \\frac{I_G\\sin^2\\theta}{\\bar y A}\\)"),
+      methodStep(1, "Locate the centroid", "\\(\\bar y = \\frac{h_t}{\\sin\\theta}+\\frac{L}{2},\\quad \\bar h=\\bar y\\sin\\theta\\)"),
+      methodStep(2, "Integrate the pressure", "\\(F_R = \\rho g\\bar h A\\)"),
+      methodStep(3, "Place the resultant", "\\(y_{CP} = \\bar y + \\frac{I_G}{\\bar y A}\\)"),
     ].join("");
-    elements.resultTitle.textContent = "From centroid depth to centre of pressure";
+    elements.resultTitle.textContent = "From y and h to the centre of pressure";
     elements.equationGrid.innerHTML = [
-      equationCard("1 · Geometry", `\\(A = ${fmt(result.width)}\\times${fmt(result.length)} = \\mathbf{${fmt(result.area)}\\;\\mathrm{m^2}}\\)<br>\\(\\bar y = ${fmt(result.topDepth)} + \\frac{${fmt(result.length)}}{2}\\sin ${fmt(result.angle, 0)}^\\circ = \\mathbf{${fmt(result.centroidDepth)}\\;\\mathrm{m}}\\)`),
-      equationCard("2 · Resultant", `\\(F_R = (${fmt(result.density, 0)})(${fmt(GRAVITY, 1)})(${fmt(result.centroidDepth)})(${fmt(result.area)})\\)<br>\\(F_R = \\mathbf{${fmt(result.forceKN)}\\;\\mathrm{kN}}\\)`),
-      equationCard("3 · Line of action", `\\(I_G = \\frac{bL^3}{12} = ${fmt(result.centroidalInertia, 3)}\\;\\mathrm{m^4}\\)<br>\\(y_{CP} = \\mathbf{${fmt(result.centerPressureDepth)}\\;\\mathrm{m}}\\)`),
+      equationCard("1 · Geometry", `\\(A = ${fmt(result.width)}\\times${fmt(result.length)} = \\mathbf{${fmt(result.area)}\\;\\mathrm{m^2}}\\)<br>\\(y_t = \\frac{h_t}{\\sin\\theta} = ${fmt(result.topPositionAlongPlane)}\\;\\mathrm{m}\\)<br>\\(\\bar y = y_t + \\frac{L}{2} = \\mathbf{${fmt(result.centroidPosition)}\\;\\mathrm{m}}\\)`),
+      equationCard("2 · Resultant", `\\(\\bar h = \\bar y\\sin\\theta = \\mathbf{${fmt(result.centroidWaterDepth)}\\;\\mathrm{m}}\\)<br>\\(F_R = (${fmt(result.density, 0)})(${fmt(GRAVITY, 1)})(${fmt(result.centroidWaterDepth)})(${fmt(result.area)})\\)<br>\\(F_R = \\mathbf{${fmt(result.forceKN)}\\;\\mathrm{kN}}\\)`),
+      equationCard("3 · Line of action", `\\(I_G = \\frac{bL^3}{12} = ${fmt(result.centroidalInertia, 3)}\\;\\mathrm{m^4}\\)<br>\\(y_{CP} = \\bar y + \\frac{I_G}{\\bar y A} = \\mathbf{${fmt(result.centerPressurePosition)}\\;\\mathrm{m}}\\)<br>\\(h_{CP}=y_{CP}\\sin\\theta=${fmt(result.centerPressureWaterDepth)}\\;\\mathrm{m}\\)`),
     ].join("");
     elements.challengeTitle.textContent = "Predict the force and centre of pressure";
-    elements.challengePrompt.textContent = "Calculate the resultant force and CP depth below the free surface. Both answers must be within 2%.";
+    elements.challengePrompt.textContent = "Calculate the resultant force and centre-of-pressure position along the y-axis, measured from the free-surface origin. Both answers must be within 2%.";
     elements.forcePredictionLabel.textContent = "Resultant force";
-    elements.cpPredictionLabel.textContent = "CP depth";
+    elements.cpPredictionLabel.textContent = "CP position along y-axis";
     elements.verticalCpGroup.hidden = true;
     elements.challengeInputs.classList.remove("curved-inputs");
     elements.coachQuestion.placeholder = "Why is the centre of pressure below the centroid?";
@@ -587,7 +587,7 @@ function drawPlane(result) {
   ctx.stroke();
   ctx.restore();
   if (result.topDepth >= 0.15) {
-    boxedLabel(ctx, `yₜ = ${fmt(result.topDepth, 1)} m`, x1 - 8, (waterLine + y1) / 2, "#51657d", "right");
+    boxedLabel(ctx, `hₜ = ${fmt(result.topDepth, 1)} m`, x1 - 8, (waterLine + y1) / 2, "#51657d", "right");
   }
 
   ctx.save();
@@ -656,6 +656,8 @@ function drawPlane(result) {
   ctx.stroke();
   ctx.restore();
   boxedLabel(ctx, `${fmt(result.angle, 0)}°`, x1 + 42, y1 + 24, "#52667e");
+  arrow(ctx, x2 + tx * 5, y2 + ty * 5, x2 + tx * 42, y2 + ty * 42, "#52667e", 1.5, 6);
+  boxedLabel(ctx, "+y", x2 + tx * 48, y2 + ty * 48, "#52667e");
 }
 
 function drawCurved(result) {
@@ -838,7 +840,7 @@ function challengeAnswers() {
   if (state.surface === "plane") {
     return {
       force: result.forceKN,
-      horizontalCp: result.centerPressureDepth,
+      horizontalCp: result.centerPressurePosition,
       verticalCp: null,
     };
   }
@@ -889,7 +891,7 @@ function checkPrediction() {
   ) {
     elements.challengeFeedback.textContent = needsVerticalCp
       ? "Enter the resultant, horizontal CP, and vertical CP first."
-      : "Enter both the resultant force and CP depth first.";
+      : "Enter both the resultant force and CP position first.";
     elements.challengeFeedback.className = "challenge-feedback bad";
     return;
   }
@@ -916,7 +918,7 @@ function checkPrediction() {
     saveAdaptiveProgress();
     elements.challengeFeedback.textContent = needsVerticalCp
       ? `Correct — ${fmt(answers.force)} kN, horizontal CP ${fmt(answers.horizontalCp)} m, and vertical CP ${fmt(answers.verticalCp)} m.${wasTransfer ? " Independent transfer passed." : ""}`
-      : `Correct — ${fmt(answers.force)} kN and CP depth ${fmt(answers.horizontalCp)} m.${wasTransfer ? " Independent transfer passed." : ""}`;
+      : `Correct — ${fmt(answers.force)} kN and CP position ${fmt(answers.horizontalCp)} m along the plate.${wasTransfer ? " Independent transfer passed." : ""}`;
     elements.challengeFeedback.className = "challenge-feedback good";
     renderReadings(currentResult());
     renderAdaptivePanel();
@@ -925,7 +927,7 @@ function checkPrediction() {
   }
   const corrections = [];
   if (!forceCorrect) corrections.push(`resultant is ${answerDirection(prediction, answers.force)}`);
-  if (!horizontalCpCorrect) corrections.push(`${needsVerticalCp ? "horizontal CP" : "CP depth"} is ${answerDirection(cpPrediction, answers.horizontalCp)}`);
+  if (!horizontalCpCorrect) corrections.push(`${needsVerticalCp ? "horizontal CP" : "CP position"} is ${answerDirection(cpPrediction, answers.horizontalCp)}`);
   if (!verticalCpCorrect) corrections.push(`vertical CP is ${answerDirection(verticalCpPrediction, answers.verticalCp)}`);
   elements.challengeFeedback.textContent = `Not yet — ${corrections.join("; ")}. Check the relevant line-of-action formula and units.`;
   elements.challengeFeedback.className = "challenge-feedback warn";
@@ -939,8 +941,8 @@ function showHint() {
   const focus = state.adaptiveProgress.lastCoachFocus;
   if (state.surface === "plane") {
     elements.challengeFeedback.textContent = focus === "force"
-      ? `Start with the requested force focus: \\(F_R = \\rho g\\bar y A\\). Then use \\(y_{CP}=\\bar y+I_G\\sin^2\\theta/(\\bar yA)\\) for the CP entry.`
-      : `Focus on the line of action: \\(y_{CP}=\\bar y+I_G\\sin^2\\theta/(\\bar yA)\\). The force entry still comes from \\(F_R = \\rho g\\bar y A\\).`;
+      ? `Start with \\(\\bar y=h_t/\\sin\\theta+L/2\\), then find \\(\\bar h=\\bar y\\sin\\theta\\) and \\(F_R=\\rho g\\bar hA\\). Use \\(y_{CP}=\\bar y+I_G/(\\bar yA)\\) for the CP entry.`
+      : `The CP entry is measured along the plate: \\(y_{CP}=\\bar y+I_G/(\\bar yA)\\). Keep it distinct from the vertical water depth \\(h_{CP}=y_{CP}\\sin\\theta\\).`;
   } else {
     if (focus === "verticalCp") {
       elements.challengeFeedback.textContent = `Use the chat-informed focus: the vertical CP is the centroid line \\(x_V=\\sum V_i x_i/\\sum V_i\\) of the complete imaginary-fluid volume.`;
@@ -962,7 +964,7 @@ function revealAnswer() {
   state.adaptiveProgress.reveals += 1;
   const answers = challengeAnswers();
   elements.challengeFeedback.textContent = state.surface === "plane"
-    ? `Resultant: ${fmt(answers.force)} kN; CP depth: ${fmt(answers.horizontalCp)} m.`
+    ? `Resultant: ${fmt(answers.force)} kN; CP position along the plate: ${fmt(answers.horizontalCp)} m.`
     : `Resultant: ${fmt(answers.force)} kN; horizontal CP: ${fmt(answers.horizontalCp)} m; vertical CP: ${fmt(answers.verticalCp)} m from the left edge.`;
   elements.challengeFeedback.className = "challenge-feedback good";
   saveAdaptiveProgress();

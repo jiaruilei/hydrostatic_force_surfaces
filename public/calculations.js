@@ -19,13 +19,16 @@ export function planeForces(input = {}) {
   const theta = angle * Math.PI / 180;
   const sinTheta = Math.sin(theta);
   const area = width * length;
-  const centroidDepth = topDepth + 0.5 * length * sinTheta;
+  const topPositionAlongPlane = topDepth / sinTheta;
+  const centroidPosition = topPositionAlongPlane + length / 2;
+  const centroidWaterDepth = centroidPosition * sinTheta;
   const centroidalInertia = width * length ** 3 / 12;
-  const forceN = density * GRAVITY * centroidDepth * area;
-  const centerPressureDepth = centroidDepth
-    + centroidalInertia * sinTheta ** 2 / (centroidDepth * area);
-  const centerPressureFromTop = (centerPressureDepth - topDepth) / sinTheta;
-  const centroidToPressure = centerPressureFromTop - length / 2;
+  const forceN = density * GRAVITY * centroidWaterDepth * area;
+  const centerPressurePosition = centroidPosition
+    + centroidalInertia / (centroidPosition * area);
+  const centerPressureWaterDepth = centerPressurePosition * sinTheta;
+  const centerPressureFromTop = centerPressurePosition - topPositionAlongPlane;
+  const centroidToPressure = centerPressurePosition - centroidPosition;
   const bottomDepth = topDepth + length * sinTheta;
 
   return {
@@ -38,11 +41,14 @@ export function planeForces(input = {}) {
     theta,
     sinTheta,
     area,
-    centroidDepth,
+    topPositionAlongPlane,
+    centroidPosition,
+    centroidWaterDepth,
     centroidalInertia,
     forceN,
     forceKN: forceN / 1000,
-    centerPressureDepth,
+    centerPressurePosition,
+    centerPressureWaterDepth,
     centerPressureFromTop,
     centroidToPressure,
     bottomDepth,
