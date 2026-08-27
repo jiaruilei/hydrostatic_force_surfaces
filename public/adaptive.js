@@ -176,6 +176,13 @@ export function transferCase(surface) {
   return { ...ADAPTIVE_CASES[surface].transfer };
 }
 
+export function transferDensityChange(previousDensity, nextDensity) {
+  const from = Number(previousDensity);
+  const to = Number(nextDensity);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || Math.abs(from - to) < 1e-9) return null;
+  return { from, to };
+}
+
 export function classifyCoachFocus(question, surface) {
   const text = String(question || "").toLowerCase();
   if (surface === "plane") {

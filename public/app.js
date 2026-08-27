@@ -9,6 +9,7 @@ import {
   normaliseAdaptiveProgress,
   surfaceSkills,
   transferCase,
+  transferDensityChange,
   transferUnlocked,
   updateSkillMastery,
 } from "./adaptive.js";
@@ -72,6 +73,7 @@ const elements = {
   adaptivePanel: document.querySelector(".adaptive-evaluation"),
   adaptiveBand: $("adaptiveBand"),
   adaptiveGuidance: $("adaptiveGuidance"),
+  transferDensityNotice: $("transferDensityNotice"),
   masteryGrid: $("masteryGrid"),
   evidenceRow: $("evidenceRow"),
   nextAdaptiveCase: $("nextAdaptiveCase"),
@@ -120,6 +122,7 @@ const state = {
   adaptiveProgress: loadAdaptiveProgress(),
   creditedSkills: [],
   transferActive: false,
+  transferDensityChange: null,
   apiConfigured: false,
   apiConnected: false,
 };
@@ -339,6 +342,11 @@ function renderAdaptivePanel() {
 
   elements.adaptivePanel.classList.toggle("transfer-active", state.transferActive);
   elements.adaptiveBand.textContent = state.transferActive ? "Independent check" : masteryBand(average);
+  const densityChange = state.transferActive ? state.transferDensityChange : null;
+  elements.transferDensityNotice.hidden = !densityChange;
+  elements.transferDensityNotice.textContent = densityChange
+    ? `Fluid update: density changed from ${fmt(densityChange.from, 0)} to ${fmt(densityChange.to, 0)} kg/m³ for this transfer case.`
+    : "";
   if (state.transferActive) {
     elements.adaptiveGuidance.textContent = "Solve this unfamiliar case without hints or AI coaching. The geometry is locked until the check is complete.";
   } else if (passed) {
@@ -403,6 +411,8 @@ function syncAdaptiveControls() {
 }
 
 function applyAdaptiveCase(caseData, transfer = false) {
+  const previousDensity = number(elements.density.value);
+  const densityChange = transferDensityChange(previousDensity, caseData.density);
   elements.density.value = caseData.density;
   const matchingFluid = [...elements.fluidPreset.options].find((option) => option.value === String(caseData.density));
   elements.fluidPreset.value = matchingFluid ? matchingFluid.value : "";
@@ -418,6 +428,7 @@ function applyAdaptiveCase(caseData, transfer = false) {
     state.side = caseData.side;
   }
   state.transferActive = transfer;
+  state.transferDensityChange = transfer ? densityChange : null;
   resetChallenge();
   elements.challengeFeedback.textContent = transfer
     ? "Independent transfer is active: solve without hints or AI coaching."
@@ -437,6 +448,7 @@ function startTransferCheck() {
 function resetAdaptiveLearning() {
   state.adaptiveProgress = createAdaptiveProgress();
   state.transferActive = false;
+  state.transferDensityChange = null;
   saveAdaptiveProgress();
   resetChallenge();
   render();
@@ -797,13 +809,17 @@ function render() {
 function selectSurface(surface) {
   if (state.surface === surface) return;
   state.transferActive = false;
+  state.transferDensityChange = null;
   state.surface = surface;
   resetChallenge();
   render();
 }
 
 function selectMode(mode) {
-  if (mode !== "challenge") state.transferActive = false;
+  if (mode !== "challenge") {
+    state.transferActive = false;
+    state.transferDensityChange = null;
+  }
   state.mode = mode;
   resetChallenge();
   render();
@@ -826,6 +842,7 @@ function resetExperiment() {
     state.side = values.side;
   }
   state.transferActive = false;
+  state.transferDensityChange = null;
   resetChallenge();
   render();
 }
@@ -914,6 +931,7 @@ function checkPrediction() {
     if (wasTransfer) {
       state.adaptiveProgress.transferPassed[state.surface] = true;
       state.transferActive = false;
+      state.transferDensityChange = null;
     }
     saveAdaptiveProgress();
     elements.challengeFeedback.textContent = needsVerticalCp

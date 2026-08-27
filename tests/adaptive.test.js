@@ -8,6 +8,7 @@ import {
   createAdaptiveProgress,
   masteryBand,
   normaliseAdaptiveProgress,
+  transferDensityChange,
   transferUnlocked,
   updateSkillMastery,
 } from "../public/adaptive.js";
@@ -35,6 +36,12 @@ test("transfer unlock requires every surface skill", () => {
   assert.equal(transferUnlocked(progress, "curved"), false);
   progress.mastery.curved.verticalCp = 0.6;
   assert.equal(transferUnlocked(progress, "curved"), true);
+});
+
+test("transfer density warning appears only when density changes", () => {
+  assert.deepEqual(transferDensityChange(1000, 1025), { from: 1000, to: 1025 });
+  assert.equal(transferDensityChange(1025, 1025), null);
+  assert.equal(transferDensityChange("invalid", 1025), null);
 });
 
 test("chat classification targets support without scoring verbosity", () => {

@@ -189,6 +189,8 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
 .adaptive-heading h4 { margin:1px 0 0; color:#233651; font-size:14px; }
 .adaptive-band { padding:5px 8px; border-radius:999px; color:#1d4ed8; background:#dbeafe; font-size:10px; font-weight:850; text-transform:uppercase; }
 .adaptive-guidance { margin:0 0 10px; color:var(--muted); font-size:11px; line-height:1.45; }
+.transfer-density-notice { margin:0 0 10px; padding:7px 9px; border:1px solid #f2c46d; border-radius:8px; color:#7c4a03; background:#fff7e6; font-size:11px; font-weight:750; line-height:1.4; }
+.transfer-density-notice[hidden] { display:none; }
 .mastery-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
 .mastery-item { padding:9px; border:1px solid #e1e8f1; border-radius:9px; background:#fff; }
 .mastery-label { display:flex; align-items:baseline; justify-content:space-between; gap:8px; color:#42526a; font-size:10px; font-weight:800; }
